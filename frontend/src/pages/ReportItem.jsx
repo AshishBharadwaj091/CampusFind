@@ -12,12 +12,100 @@ const initialValues = {
   description: '',
   date: '',
   location: '',
+  whatsappCountryCode: '+91',
+  whatsappNumber: '',
+  contactCountryCode: '+91',
+  contactNumber: '',
+  emailAddress: '',
+  contactPreference: 'Share my contact details only with interested students.',
+  shareWithInterestedOnly: true,
 }
 
 const maxPhotoSize = 5 * 1024 * 1024
 const supportedImageTypes = ['image/jpeg', 'image/png', 'image/webp']
 const currentDate = new Date()
 const today = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`
+
+const countryCodeOptions = [
+  { code: '+91', label: '+91 (India)' },
+  { code: '+1', label: '+1 (US/Canada)' },
+  { code: '+44', label: '+44 (UK)' },
+  { code: '+971', label: '+971 (UAE)' },
+  { code: '+61', label: '+61 (Australia)' },
+  { code: '+65', label: '+65 (Singapore)' },
+  { code: '+49', label: '+49 (Germany)' },
+]
+
+function WhatsAppIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      className="field-inline-icon"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M3 21l1.65-3.8a9 9 0 1 1 3.4 2.9L3 21" />
+      <path d="M9 10a.5.5 0 0 0 1 0V9a.5.5 0 0 0-1 0v1a5 5 0 0 0 5 5h1a.5.5 0 0 0 0-1h-1a.5.5 0 0 0 0 1" />
+    </svg>
+  )
+}
+
+function PhoneIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      className="field-inline-icon"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+    </svg>
+  )
+}
+
+function EmailIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      className="field-inline-icon"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <rect width="20" height="16" x="2" y="4" rx="2" />
+      <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+    </svg>
+  )
+}
+
+function ShieldCheckIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      className="field-inline-icon shield-icon"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      <path d="m9 12 2 2 4-4" />
+    </svg>
+  )
+}
 
 function ReportItem({ onCancel }) {
   const [values, setValues] = useState(initialValues)
@@ -53,6 +141,10 @@ function ReportItem({ onCancel }) {
     }
     if (name === 'category' && value !== 'Other' && errors.customCategory) {
       setErrors((current) => ({ ...current, customCategory: '' }))
+    }
+    // Clear collective contact error if user types in any contact field
+    if (['whatsappNumber', 'contactNumber', 'emailAddress'].includes(name) && errors.contact) {
+      setErrors((current) => ({ ...current, contact: '' }))
     }
   }
 
@@ -111,6 +203,43 @@ function ReportItem({ onCancel }) {
     if (!values.location.trim()) {
       nextErrors.location = 'Enter an approximate campus location.'
     }
+
+    // Contact Information Validation
+    const rawWhatsApp = values.whatsappNumber.trim()
+    const rawPhone = values.contactNumber.trim()
+    const rawEmail = values.emailAddress.trim()
+
+    const hasWhatsApp = Boolean(rawWhatsApp)
+    const hasPhone = Boolean(rawPhone)
+    const hasEmail = Boolean(rawEmail)
+
+    // At least one contact method must be provided
+    if (!hasWhatsApp && !hasPhone && !hasEmail) {
+      nextErrors.contact =
+        'Please provide at least one contact method (WhatsApp, Contact Number, or Email) so others can reach you.'
+    }
+
+    if (hasWhatsApp) {
+      const digits = rawWhatsApp.replace(/\D/g, '')
+      if (digits.length < 7 || digits.length > 15) {
+        nextErrors.whatsappNumber = 'Enter a valid WhatsApp phone number (e.g. 10 digits).'
+      }
+    }
+
+    if (hasPhone) {
+      const digits = rawPhone.replace(/\D/g, '')
+      if (digits.length < 7 || digits.length > 15) {
+        nextErrors.contactNumber = 'Enter a valid contact phone number (e.g. 10 digits).'
+      }
+    }
+
+    if (hasEmail) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!emailRegex.test(rawEmail)) {
+        nextErrors.emailAddress = 'Enter a valid email address.'
+      }
+    }
+
     return nextErrors
   }
 
@@ -125,11 +254,23 @@ function ReportItem({ onCancel }) {
     setSubmitError('')
 
     if (Object.keys(nextErrors).length > 0 || photoError) {
-      const firstInvalidField = ['name', 'category', 'customCategory', 'description', 'date', 'location']
-        .find((field) => nextErrors[field])
+      const firstInvalidField = [
+        'name',
+        'category',
+        'customCategory',
+        'description',
+        'date',
+        'location',
+        'whatsappNumber',
+        'contactNumber',
+        'emailAddress',
+      ].find((field) => nextErrors[field])
+
       const invalidField = firstInvalidField
         ? formRef.current?.querySelector(`[name="${firstInvalidField}"]`)
-        : formRef.current?.querySelector('#report-photo')
+        : nextErrors.contact
+          ? formRef.current?.querySelector('#report-whatsapp')
+          : formRef.current?.querySelector('#report-photo')
       invalidField?.focus()
       return
     }
@@ -138,6 +279,16 @@ function ReportItem({ onCancel }) {
     setIsSubmitting(true)
 
     try {
+      const formattedWhatsApp = values.whatsappNumber.trim()
+        ? `${values.whatsappCountryCode} ${values.whatsappNumber.trim()}`
+        : null
+      const formattedContact = values.contactNumber.trim()
+        ? `${values.contactCountryCode} ${values.contactNumber.trim()}`
+        : null
+      const formattedEmail = values.emailAddress.trim()
+        ? values.emailAddress.trim().toLowerCase()
+        : null
+
       if (isSupabaseConfigured && supabase) {
         let photoUrl = null
         if (photo) {
@@ -173,15 +324,53 @@ function ReportItem({ onCancel }) {
           location: values.location.trim(),
           reported: values.date,
           photo_url: photoUrl,
+          whatsapp_number: formattedWhatsApp,
+          contact_number: formattedContact,
+          email_address: formattedEmail,
+          contact_preference: values.contactPreference,
         }
 
-        const { data: createdItem, error: insertError } = await supabase
+        let createdItem = null
+        const { data, error: insertError } = await supabase
           .from('items')
           .insert(newItem)
           .select()
           .single()
 
-        if (insertError) throw insertError
+        if (insertError) {
+          // If Supabase table columns haven't been added yet, insert core fields as fallback
+          if (
+            insertError.message?.includes('column') ||
+            insertError.code === 'PGRST204' ||
+            insertError.message?.includes('schema cache')
+          ) {
+            console.warn(
+              'Supabase items table missing contact columns. Inserting core item fields. Please run supabase_schema.sql in Supabase SQL editor.',
+            )
+            const fallbackItem = {
+              name: newItem.name,
+              status: newItem.status,
+              category: newItem.category,
+              custom_category: newItem.custom_category,
+              description: newItem.description,
+              location: newItem.location,
+              reported: newItem.reported,
+              photo_url: newItem.photo_url,
+            }
+            const { data: retryData, error: retryError } = await supabase
+              .from('items')
+              .insert(fallbackItem)
+              .select()
+              .single()
+
+            if (retryError) throw retryError
+            createdItem = { ...retryData, ...newItem, pendingMigrationNotice: true }
+          } else {
+            throw insertError
+          }
+        } else {
+          createdItem = data
+        }
 
         try {
           await supabase.from('reports').insert({
@@ -192,6 +381,10 @@ function ReportItem({ onCancel }) {
             date_reported: newItem.reported,
             review_status: 'Pending review',
             description: newItem.description,
+            reporter_whatsapp: formattedWhatsApp,
+            reporter_contact: formattedContact,
+            reporter_email: formattedEmail,
+            reporter_preference: values.contactPreference,
           })
         } catch (reportErr) {
           console.warn('Staff report creation error (non-fatal):', reportErr)
@@ -214,11 +407,16 @@ function ReportItem({ onCancel }) {
           description: values.description.trim(),
           date: values.date,
           location: values.location.trim(),
+          whatsappNumber: formattedWhatsApp,
+          contactNumber: formattedContact,
+          emailAddress: formattedEmail,
+          contactPreference: values.contactPreference,
           ...(values.category === 'Other' && values.customCategory.trim()
             ? { customCategory: values.customCategory.trim() }
             : {}),
         }),
       })
+
       let payload
       try {
         payload = await response.json()
@@ -230,12 +428,33 @@ function ReportItem({ onCancel }) {
         if (payload?.error?.details && typeof payload.error.details === 'object') {
           const serverErrors = Object.fromEntries(
             Object.entries(payload.error.details).filter(([field]) =>
-              ['type', 'name', 'category', 'customCategory', 'description', 'date', 'location'].includes(field),
+              [
+                'type',
+                'name',
+                'category',
+                'customCategory',
+                'description',
+                'date',
+                'location',
+                'whatsappNumber',
+                'contactNumber',
+                'emailAddress',
+                'contact',
+              ].includes(field),
             ),
           )
           setErrors(serverErrors)
-          const firstInvalidField = ['name', 'category', 'customCategory', 'description', 'date', 'location']
-            .find((field) => serverErrors[field])
+          const firstInvalidField = [
+            'name',
+            'category',
+            'customCategory',
+            'description',
+            'date',
+            'location',
+            'whatsappNumber',
+            'contactNumber',
+            'emailAddress',
+          ].find((field) => serverErrors[field])
           formRef.current
             ?.querySelector(`[name="${firstInvalidField || 'name'}"]`)
             ?.focus()
@@ -245,7 +464,8 @@ function ReportItem({ onCancel }) {
             `The report could not be created (HTTP ${response.status}).`,
         )
       }
-      if (payload?.status !== 'ok' || !payload.item?.id) {
+
+      if (!payload?.item?.id) {
         throw new Error('The CampusFind API response did not confirm report creation.')
       }
 
@@ -274,8 +494,7 @@ function ReportItem({ onCancel }) {
         <p className="browse-eyebrow">Campus Lost &amp; Found</p>
         <h1 id="report-title">Report an item</h1>
         <p>
-          Share a few details to prepare a lost or found item report for this
-          CampusFind demo.
+          Share the item details and your preferred contact method. We protect your privacy while making it easy for the finder or owner to reach you.
         </p>
       </section>
 
@@ -391,7 +610,7 @@ function ReportItem({ onCancel }) {
                 name="description"
                 value={values.description}
                 onChange={updateValue}
-                placeholder="Describe the item, including useful identifying features."
+                placeholder="Describe the item, including distinguishing marks, color, brand, or features."
                 rows={4}
                 maxLength={700}
                 required
@@ -402,12 +621,11 @@ function ReportItem({ onCancel }) {
                 ].filter(Boolean).join(' ')}
               />
               <p className="field-hint" id="report-description-hint">
-                Keep the location general. Don&apos;t include personal or sensitive information.
+                Keep the location general. Don&apos;t include confidential security codes or passwords.
               </p>
               {values.type === 'Found' && (
                 <p className="privacy-reminder">
-                  For found items, don&apos;t reveal private ownership-verification
-                  details in the public description.
+                  For found items, hold back one unique detail so you can verify ownership when the owner reaches out.
                 </p>
               )}
               {errors.description && (
@@ -441,14 +659,14 @@ function ReportItem({ onCancel }) {
                 type="text"
                 value={values.location}
                 onChange={updateValue}
-                placeholder="e.g. Near the main library"
+                placeholder="e.g. Block 34 cafeteria or Main Library 2nd Floor"
                 maxLength={120}
                 required
                 aria-invalid={Boolean(errors.location)}
                 aria-describedby={errors.location ? 'report-location-error' : 'report-location-hint'}
               />
               <p className="field-hint" id="report-location-hint">
-                Use a general area, not an exact recovery location.
+                Use a general campus area or building name.
               </p>
               {errors.location && (
                 <p className="field-error" id="report-location-error">{errors.location}</p>
@@ -467,8 +685,7 @@ function ReportItem({ onCancel }) {
                   aria-invalid={Boolean(photoError)}
                 />
                 <p className="field-hint" id="report-photo-hint">
-                  JPG, PNG or WebP, up to 5 MB. The image stays in this browser
-                  and is not uploaded.
+                  JPG, PNG or WebP, up to 5 MB. Photos help other campus members identify your item quickly.
                 </p>
               </div>
               {photoError && (
@@ -491,9 +708,164 @@ function ReportItem({ onCancel }) {
             </div>
           </div>
 
+          {/* ================================================================
+              Contact Information Section
+              ================================================================ */}
+          <section className="report-contact-section" aria-labelledby="contact-section-title">
+            <div className="contact-section-header">
+              <div className="contact-section-icon-badge">
+                <ShieldCheckIcon />
+              </div>
+              <div>
+                <h2 id="contact-section-title" className="contact-section-title">
+                  Contact Information
+                </h2>
+                <p className="contact-section-subtitle">
+                  Provide at least one contact method so people can connect with you. All fields are individually optional, but at least one is required.
+                </p>
+              </div>
+            </div>
+
+            {errors.contact && (
+              <div className="contact-requirement-alert" role="alert">
+                <span className="alert-bullet">!</span>
+                <span>{errors.contact}</span>
+              </div>
+            )}
+
+            <div className="contact-fields-grid">
+              {/* WhatsApp Number Field */}
+              <div className="report-field contact-phone-field">
+                <label htmlFor="report-whatsapp">
+                  <WhatsAppIcon />
+                  WhatsApp Number
+                  <span className="optional-label">(optional)</span>
+                </label>
+                <div className="phone-input-group">
+                  <select
+                    className="country-code-select"
+                    name="whatsappCountryCode"
+                    value={values.whatsappCountryCode}
+                    onChange={updateValue}
+                    aria-label="WhatsApp country calling code"
+                  >
+                    {countryCodeOptions.map((opt) => (
+                      <option key={opt.code} value={opt.code}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    id="report-whatsapp"
+                    name="whatsappNumber"
+                    type="tel"
+                    value={values.whatsappNumber}
+                    onChange={updateValue}
+                    placeholder="e.g. 98765 43210"
+                    maxLength={15}
+                    aria-invalid={Boolean(errors.whatsappNumber)}
+                    aria-describedby={errors.whatsappNumber ? 'report-whatsapp-error' : undefined}
+                  />
+                </div>
+                {errors.whatsappNumber && (
+                  <p className="field-error" id="report-whatsapp-error">{errors.whatsappNumber}</p>
+                )}
+              </div>
+
+              {/* Contact Phone Number Field */}
+              <div className="report-field contact-phone-field">
+                <label htmlFor="report-contact-number">
+                  <PhoneIcon />
+                  Contact Number
+                  <span className="optional-label">(optional)</span>
+                </label>
+                <div className="phone-input-group">
+                  <select
+                    className="country-code-select"
+                    name="contactCountryCode"
+                    value={values.contactCountryCode}
+                    onChange={updateValue}
+                    aria-label="Phone country calling code"
+                  >
+                    {countryCodeOptions.map((opt) => (
+                      <option key={opt.code} value={opt.code}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    id="report-contact-number"
+                    name="contactNumber"
+                    type="tel"
+                    value={values.contactNumber}
+                    onChange={updateValue}
+                    placeholder="e.g. 98765 43210"
+                    maxLength={15}
+                    aria-invalid={Boolean(errors.contactNumber)}
+                    aria-describedby={errors.contactNumber ? 'report-contact-number-error' : undefined}
+                  />
+                </div>
+                {errors.contactNumber && (
+                  <p className="field-error" id="report-contact-number-error">{errors.contactNumber}</p>
+                )}
+              </div>
+
+              {/* Email Address Field */}
+              <div className="report-field contact-field-full">
+                <label htmlFor="report-email">
+                  <EmailIcon />
+                  Email Address
+                  <span className="optional-label">(optional)</span>
+                </label>
+                <input
+                  id="report-email"
+                  name="emailAddress"
+                  type="email"
+                  value={values.emailAddress}
+                  onChange={updateValue}
+                  placeholder="e.g. yourname@campus.edu"
+                  maxLength={120}
+                  aria-invalid={Boolean(errors.emailAddress)}
+                  aria-describedby={errors.emailAddress ? 'report-email-error' : undefined}
+                />
+                {errors.emailAddress && (
+                  <p className="field-error" id="report-email-error">{errors.emailAddress}</p>
+                )}
+              </div>
+
+              {/* Privacy Preference Option */}
+              <div className="contact-privacy-card contact-field-full">
+                <label className="privacy-checkbox-label">
+                  <input
+                    type="checkbox"
+                    name="shareWithInterestedOnly"
+                    checked={values.shareWithInterestedOnly}
+                    onChange={(e) => {
+                      const checked = e.target.checked
+                      setValues((prev) => ({
+                        ...prev,
+                        shareWithInterestedOnly: checked,
+                        contactPreference: checked
+                          ? 'Share my contact details only with interested students.'
+                          : 'Share publicly with anyone browsing.',
+                      }))
+                    }}
+                  />
+                  <span className="privacy-checkbox-custom" />
+                  <span className="privacy-text-content">
+                    <strong>Share my contact details only with interested students.</strong>
+                    <small>
+                      Prevents public spam. Contact details are never shown on public listing cards and are only revealed through an authorized verification flow.
+                    </small>
+                  </span>
+                </label>
+              </div>
+            </div>
+          </section>
+
           {attemptedSubmit && (Object.keys(errors).length > 0 || photoError) && (
             <p className="form-error-summary" role="alert">
-              Please correct the highlighted fields before continuing.
+              Please check the highlighted fields above before submitting.
             </p>
           )}
 
@@ -505,12 +877,17 @@ function ReportItem({ onCancel }) {
 
           {confirmation && (
             <div className="report-confirmation" role="status" aria-live="polite">
-              <strong>Demo report created</strong>
+              <div className="confirmation-title-wrap">
+                <span className="confirmation-check-badge">✓</span>
+                <strong>Report created successfully!</strong>
+              </div>
               <p>
-                Reference {confirmation.id}: your {confirmation.status.toLowerCase()}
-                {' '}item is available in Browse Items while the backend process
-                remains running. This is in-memory demo data and will reset
-                when the server restarts. The selected photo was not uploaded.
+                Reference #{confirmation.id?.slice?.(0, 8) || confirmation.id}: Your {confirmation.status?.toLowerCase() || values.type.toLowerCase()} item is now listed in the campus database.
+                {values.contactPreference && (
+                  <span className="confirmation-privacy-note">
+                    {' '}Your contact details are protected under your preference: &ldquo;{values.contactPreference}&rdquo;.
+                  </span>
+                )}
               </p>
             </div>
           )}
@@ -522,10 +899,10 @@ function ReportItem({ onCancel }) {
               disabled={isSubmitting || Boolean(confirmation)}
             >
               {isSubmitting
-                ? 'Creating demo report…'
+                ? 'Submitting report…'
                 : confirmation
-                  ? 'Demo report created'
-                  : 'Submit demo report'}
+                  ? 'Report Submitted'
+                  : `Submit ${values.type} Item Report`}
             </button>
             <button className="button button-outline" type="button" onClick={onCancel}>
               Cancel
@@ -533,18 +910,16 @@ function ReportItem({ onCancel }) {
           </div>
         </form>
 
-        <aside className="report-side-note" aria-label="Privacy information">
+        <aside className="report-side-note" aria-label="Privacy & safety tips">
           <span className="report-side-icon" aria-hidden="true">i</span>
-          <h2>Share thoughtfully</h2>
+          <h2>Safe Campus Exchange</h2>
           <p>
-            Only include details that help identify the item. Keep personal
-            information and precise recovery locations private.
+            When meeting in person to return or collect an item, always choose a well-lit, public campus area such as the student center, library lobby, or security desk.
           </p>
-          <div className="report-demo-callout">
-            <strong>Demo only</strong>
+          <div className="report-privacy-summary-card">
+            <strong>🔒 Privacy First</strong>
             <span>
-              Reports are held in backend memory and reset when the server
-              restarts. Photos stay in this browser and are not uploaded.
+              Your phone and email are never displayed on public listing cards. Interested students must verify their intent to view your contact details.
             </span>
           </div>
         </aside>

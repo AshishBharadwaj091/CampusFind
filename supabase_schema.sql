@@ -5,7 +5,7 @@
 -- 1. Enable UUID Extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- 2. Items Table (Lost & Found Listings)
+-- 2. Items Table (Lost & Found Listings with Contact Information)
 CREATE TABLE IF NOT EXISTS public.items (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
@@ -16,8 +16,18 @@ CREATE TABLE IF NOT EXISTS public.items (
   location TEXT NOT NULL,
   reported DATE NOT NULL DEFAULT CURRENT_DATE,
   photo_url TEXT,
+  whatsapp_number TEXT,
+  contact_number TEXT,
+  email_address TEXT,
+  contact_preference TEXT DEFAULT 'Share my contact details only with interested students.',
   created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
+
+-- Idempotent column additions for existing installations
+ALTER TABLE public.items ADD COLUMN IF NOT EXISTS whatsapp_number TEXT;
+ALTER TABLE public.items ADD COLUMN IF NOT EXISTS contact_number TEXT;
+ALTER TABLE public.items ADD COLUMN IF NOT EXISTS email_address TEXT;
+ALTER TABLE public.items ADD COLUMN IF NOT EXISTS contact_preference TEXT DEFAULT 'Share my contact details only with interested students.';
 
 -- 3. Reports Table (Staff Moderation & Dashboard)
 CREATE TABLE IF NOT EXISTS public.reports (
@@ -29,6 +39,10 @@ CREATE TABLE IF NOT EXISTS public.reports (
   date_reported DATE NOT NULL DEFAULT CURRENT_DATE,
   review_status TEXT NOT NULL DEFAULT 'Pending review' CHECK (review_status IN ('Pending review', 'Approved', 'Dismissed')),
   description TEXT NOT NULL,
+  reporter_whatsapp TEXT,
+  reporter_contact TEXT,
+  reporter_email TEXT,
+  reporter_preference TEXT,
   dismiss_reason TEXT,
   dismissed_at TIMESTAMPTZ,
   warning_issued BOOLEAN NOT NULL DEFAULT false,
@@ -36,6 +50,12 @@ CREATE TABLE IF NOT EXISTS public.reports (
   warned_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
+
+-- Idempotent column additions for existing reports table
+ALTER TABLE public.reports ADD COLUMN IF NOT EXISTS reporter_whatsapp TEXT;
+ALTER TABLE public.reports ADD COLUMN IF NOT EXISTS reporter_contact TEXT;
+ALTER TABLE public.reports ADD COLUMN IF NOT EXISTS reporter_email TEXT;
+ALTER TABLE public.reports ADD COLUMN IF NOT EXISTS reporter_preference TEXT;
 
 -- 4. Enable Row Level Security (RLS)
 ALTER TABLE public.items ENABLE ROW LEVEL SECURITY;

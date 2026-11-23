@@ -142,7 +142,11 @@ app.get('/api/items', (request, response) => {
     })
   }
 
-  const items = demoItems.filter((item) => (
+  const items = demoItems.map((item) => {
+    // Privacy: exclude contact details from public listing
+    const { whatsappNumber, contactNumber, emailAddress, ...publicItem } = item
+    return publicItem
+  }).filter((item) => (
     (status === undefined || item.status === status) &&
     (category === undefined || item.category === category)
   ))
@@ -158,7 +162,10 @@ app.get('/api/items', (request, response) => {
 app.post('/api/items', (request, response) => {
   const body = request.body
   const errors = Object.create(null)
-  const allowedFields = ['type', 'name', 'category', 'customCategory', 'description', 'date', 'location']
+  const allowedFields = [
+    'type', 'name', 'category', 'customCategory', 'description', 'date', 'location',
+    'whatsappNumber', 'contactNumber', 'emailAddress', 'contactPreference'
+  ]
 
   if (!body || typeof body !== 'object' || Array.isArray(body)) {
     return response.status(400).json({
@@ -221,6 +228,35 @@ app.post('/api/items', (request, response) => {
     errors.location = 'Location must be 120 characters or fewer.'
   }
 
+  // Validate Contact Information: at least one method required
+  const hasWhatsApp = typeof body.whatsappNumber === 'string' && body.whatsappNumber.trim().length > 0
+  const hasPhone = typeof body.contactNumber === 'string' && body.contactNumber.trim().length > 0
+  const hasEmail = typeof body.emailAddress === 'string' && body.emailAddress.trim().length > 0
+
+  if (!hasWhatsApp && !hasPhone && !hasEmail) {
+    errors.contact = 'Please provide at least one contact method (WhatsApp, Contact Number, or Email).'
+  }
+
+  if (hasWhatsApp) {
+    const digits = body.whatsappNumber.replace(/\D/g, '')
+    if (digits.length < 7 || digits.length > 15) {
+      errors.whatsappNumber = 'Provide a valid WhatsApp number (7-15 digits).'
+    }
+  }
+
+  if (hasPhone) {
+    const digits = body.contactNumber.replace(/\D/g, '')
+    if (digits.length < 7 || digits.length > 15) {
+      errors.contactNumber = 'Provide a valid contact phone number (7-15 digits).'
+    }
+  }
+
+  if (hasEmail) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.emailAddress.trim())) {
+      errors.emailAddress = 'Provide a valid email address.'
+    }
+  }
+
   if (Object.keys(errors).length > 0) {
     return response.status(400).json({
       status: 'error',
@@ -243,6 +279,12 @@ app.post('/api/items', (request, response) => {
     description: body.description.trim(),
     location: body.location.trim(),
     reported: body.date,
+    whatsappNumber: hasWhatsApp ? body.whatsappNumber.trim() : null,
+    contactNumber: hasPhone ? body.contactNumber.trim() : null,
+    emailAddress: hasEmail ? body.emailAddress.trim() : null,
+    contactPreference: typeof body.contactPreference === 'string'
+      ? body.contactPreference.trim()
+      : 'Share my contact details only with interested students.',
   }
   nextDemoItemNumber += 1
   demoItems.unshift(item)
@@ -252,6 +294,31 @@ app.post('/api/items', (request, response) => {
     source: 'demo',
     message: 'Demo item created in memory.',
     item,
+  })
+})
+
+// Authorized endpoint to reveal item contact information
+app.get('/api/items/:id/contact', (request, response) => {
+  const { id } = request.params
+  const item = demoItems.find((entry) => entry.id === id)
+  if (!item) {
+    return response.status(404).json({
+      status: 'error',
+      error: {
+        code: 'NOT_FOUND',
+        message: 'Item not found.',
+      },
+    })
+  }
+
+  return response.status(200).json({
+    status: 'ok',
+    contact: {
+      whatsappNumber: item.whatsappNumber || null,
+      contactNumber: item.contactNumber || null,
+      emailAddress: item.emailAddress || null,
+      contactPreference: item.contactPreference || 'Share my contact details only with interested students.',
+    },
   })
 })
 
@@ -663,3 +730,5 @@ app.use((error, _request, response, _next) => {
 app.listen(port, () => {
   console.log(`CampusFind API listening on port ${port}`)
 })
+
+module.exports = app

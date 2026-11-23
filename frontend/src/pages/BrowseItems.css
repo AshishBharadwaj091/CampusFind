@@ -789,6 +789,214 @@
   line-height: 1.55;
 }
 
+/* ==========================================================================
+   Authorized Contact Information Flow Styles (Modal Dialog)
+   ========================================================================== */
+.item-dialog-contact-section {
+  margin-top: 18px;
+  padding: 16px;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.contact-box-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.contact-privacy-shield {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: 8px;
+  background: #eff6ff;
+  border: 1px solid #dbeafe;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.contact-box-header h3 {
+  margin: 0 0 2px;
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.contact-box-header p {
+  margin: 0;
+  color: #64748b;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.contact-reveal-prompt {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.contact-reveal-prompt p {
+  margin: 0;
+  color: #475569;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.button-contact-reveal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 9px 16px;
+  border: 1px solid #2563eb;
+  border-radius: 8px;
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.button-contact-reveal:hover:not(:disabled) {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+}
+
+.button-contact-reveal:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.contact-reveal-error {
+  margin: 6px 0 0;
+  color: #dc2626;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.contact-revealed-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.contact-method-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+}
+
+.contact-method-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.contact-method-icon {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.whatsapp-icon-bg {
+  background: #ecfdf5;
+  color: #059669;
+}
+
+.phone-icon-bg {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.email-icon-bg {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.contact-method-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 650;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.contact-method-value {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.contact-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  text-decoration: none;
+  flex-shrink: 0;
+  transition: all 150ms ease;
+}
+
+.whatsapp-action {
+  background: #059669;
+  color: #ffffff;
+}
+
+.whatsapp-action:hover {
+  background: #047857;
+  color: #ffffff;
+}
+
+.phone-action {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.phone-action:hover {
+  background: #1d4ed8;
+  color: #ffffff;
+}
+
+.email-action {
+  background: #334155;
+  color: #ffffff;
+}
+
+.email-action:hover {
+  background: #0f172a;
+  color: #ffffff;
+}
+
+.no-direct-contact-note {
+  margin: 0;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 /* --------------------------------------------------------------------------
    Responsive Media Queries (Desktop, Tablet, Mobile)
    -------------------------------------------------------------------------- */

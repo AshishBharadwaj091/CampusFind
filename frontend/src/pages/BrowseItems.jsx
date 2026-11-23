@@ -74,6 +74,62 @@ function ArrowRightIcon() {
   )
 }
 
+function WhatsAppIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M3 21l1.65-3.8a9 9 0 1 1 3.4 2.9L3 21" />
+      <path d="M9 10a.5.5 0 0 0 1 0V9a.5.5 0 0 0-1 0v1a5 5 0 0 0 5 5h1a.5.5 0 0 0 0-1h-1a.5.5 0 0 0 0 1" />
+    </svg>
+  )
+}
+
+function PhoneIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+    </svg>
+  )
+}
+
+function EmailIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <rect width="20" height="16" x="2" y="4" rx="2" />
+      <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+    </svg>
+  )
+}
+
 function ItemIllustration({ type }) {
   const common = {
     'aria-hidden': true,
@@ -270,6 +326,10 @@ function ItemCard({ item, onSelect }) {
 
 function ItemDetailsDialog({ item, onClose }) {
   const dialogRef = useRef(null)
+  const [contactRevealed, setContactRevealed] = useState(false)
+  const [loadingContact, setLoadingContact] = useState(false)
+  const [contactDetails, setContactDetails] = useState(null)
+  const [contactError, setContactError] = useState('')
 
   useEffect(() => {
     const dialog = dialogRef.current
@@ -279,6 +339,45 @@ function ItemDetailsDialog({ item, onClose }) {
       dialog.close()
     }
   }, [item])
+
+  useEffect(() => {
+    setContactRevealed(false)
+    setContactDetails(null)
+    setContactError('')
+  }, [item])
+
+  const handleRevealContact = async () => {
+    if (!item) return
+    setLoadingContact(true)
+    setContactError('')
+
+    try {
+      if (isSupabaseConfigured && supabase) {
+        const { data, error } = await supabase
+          .from('items')
+          .select('whatsapp_number, contact_number, email_address, contact_preference')
+          .eq('id', item.id)
+          .single()
+
+        if (error) throw error
+        setContactDetails(data || {})
+        setContactRevealed(true)
+      } else {
+        const response = await fetch(`${apiBaseUrl}/api/items/${item.id}/contact`)
+        const payload = await response.json()
+        if (!response.ok) {
+          throw new Error(payload?.error?.message || 'Could not retrieve contact information.')
+        }
+        setContactDetails(payload.contact || {})
+        setContactRevealed(true)
+      }
+    } catch (err) {
+      console.error('Failed to load contact info:', err)
+      setContactError(err.message || 'Unable to retrieve contact details.')
+    } finally {
+      setLoadingContact(false)
+    }
+  }
 
   const isLost = item ? (item.status || '').toLowerCase() === 'lost' : false
   const formattedDate = item ? formatItemDate(item.reported) : ''
@@ -356,8 +455,125 @@ function ItemDetailsDialog({ item, onClose }) {
             </div>
           </dl>
 
+          {/* ================================================================
+              Authorized Contact Information Flow
+              ================================================================ */}
+          <section className="item-dialog-contact-section" aria-label="Contact Reporter">
+            <div className="contact-box-header">
+              <span className="contact-privacy-shield" aria-hidden="true">🛡️</span>
+              <div>
+                <h3>Connect with Reporter</h3>
+                <p>
+                  {item.contact_preference ||
+                    'Protected: Shared only with interested campus students.'}
+                </p>
+              </div>
+            </div>
+
+            {!contactRevealed ? (
+              <div className="contact-reveal-prompt">
+                <p>
+                  {isLost
+                    ? 'Found this item? Reach out to the owner to arrange a safe return on campus.'
+                    : 'Recognize this item as yours? Contact the finder to verify ownership and claim it.'}
+                </p>
+                <button
+                  type="button"
+                  className="button button-contact-reveal"
+                  onClick={handleRevealContact}
+                  disabled={loadingContact}
+                >
+                  {loadingContact ? 'Accessing secure details…' : 'Reveal Contact Details'}
+                </button>
+                {contactError && <p className="contact-reveal-error">{contactError}</p>}
+              </div>
+            ) : (
+              <div className="contact-revealed-list">
+                {contactDetails?.whatsapp_number && (
+                  <div className="contact-method-row">
+                    <div className="contact-method-info">
+                      <span className="contact-method-icon whatsapp-icon-bg">
+                        <WhatsAppIcon />
+                      </span>
+                      <div>
+                        <span className="contact-method-label">WhatsApp</span>
+                        <strong className="contact-method-value">
+                          {contactDetails.whatsapp_number}
+                        </strong>
+                      </div>
+                    </div>
+                    <a
+                      href={`https://wa.me/${contactDetails.whatsapp_number.replace(/\D/g, '')}?text=${encodeURIComponent(
+                        `Hi, I am contacting you regarding your ${item.status} item "${item.name}" on CampusFind.`,
+                      )}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="contact-action-btn whatsapp-action"
+                    >
+                      Chat on WhatsApp
+                    </a>
+                  </div>
+                )}
+
+                {contactDetails?.contact_number && (
+                  <div className="contact-method-row">
+                    <div className="contact-method-info">
+                      <span className="contact-method-icon phone-icon-bg">
+                        <PhoneIcon />
+                      </span>
+                      <div>
+                        <span className="contact-method-label">Phone Call</span>
+                        <strong className="contact-method-value">
+                          {contactDetails.contact_number}
+                        </strong>
+                      </div>
+                    </div>
+                    <a
+                      href={`tel:${contactDetails.contact_number.replace(/\s+/g, '')}`}
+                      className="contact-action-btn phone-action"
+                    >
+                      Call
+                    </a>
+                  </div>
+                )}
+
+                {contactDetails?.email_address && (
+                  <div className="contact-method-row">
+                    <div className="contact-method-info">
+                      <span className="contact-method-icon email-icon-bg">
+                        <EmailIcon />
+                      </span>
+                      <div>
+                        <span className="contact-method-label">Email</span>
+                        <strong className="contact-method-value">
+                          {contactDetails.email_address}
+                        </strong>
+                      </div>
+                    </div>
+                    <a
+                      href={`mailto:${contactDetails.email_address}?subject=${encodeURIComponent(
+                        `CampusFind: Regarding your ${item.status} item "${item.name}"`,
+                      )}`}
+                      className="contact-action-btn email-action"
+                    >
+                      Send Email
+                    </a>
+                  </div>
+                )}
+
+                {!contactDetails?.whatsapp_number &&
+                  !contactDetails?.contact_number &&
+                  !contactDetails?.email_address && (
+                    <p className="no-direct-contact-note">
+                      No direct contact method was recorded for this listing. Please contact the campus lost &amp; found desk or authorized staff.
+                    </p>
+                  )}
+              </div>
+            )}
+          </section>
+
           <p className="item-dialog-note">
-            Please contact the campus lost &amp; found desk or authorized staff to verify ownership and claim this item.
+            Please meet in public campus areas (library, student center or cafeteria) when exchanging belongings.
           </p>
         </div>
       )}
@@ -402,7 +618,10 @@ function BrowseItems() {
 
       if (isSupabaseConfigured && supabase) {
         try {
-          let query = supabase.from('items').select('*')
+          // Privacy: Select only public listing fields (omit whatsapp_number, contact_number, email_address)
+          let query = supabase
+            .from('items')
+            .select('id, name, status, category, custom_category, description, location, reported, photo_url, contact_preference')
           if (status !== 'All') query = query.eq('status', status)
           if (category !== 'All') query = query.eq('category', category)
           query = query.order('reported', { ascending: sortBy === 'oldest' })
