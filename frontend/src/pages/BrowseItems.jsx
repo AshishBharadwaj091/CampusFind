@@ -11,12 +11,65 @@ function SearchIcon() {
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth="1.8"
+      strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
     >
-      <circle cx="10.8" cy="10.8" r="6.8" />
-      <path d="m16 16 4.5 4.5" />
+      <circle cx="11" cy="11" r="8" />
+      <path d="m21 21-4.35-4.35" />
+    </svg>
+  )
+}
+
+function LocationIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+      <circle cx="12" cy="10" r="3" />
+    </svg>
+  )
+}
+
+function CalendarIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+      <line x1="16" y1="2" x2="16" y2="6" />
+      <line x1="8" y1="2" x2="8" y2="6" />
+      <line x1="3" y1="10" x2="21" y2="10" />
+    </svg>
+  )
+}
+
+function ArrowRightIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M5 12h14" />
+      <path d="m12 5 7 7-7 7" />
     </svg>
   )
 }
@@ -103,61 +156,115 @@ function ItemIllustration({ type }) {
   }
 }
 
+function formatItemDate(dateStr) {
+  if (!dateStr) return ''
+  try {
+    const isIsoDate = /^\d{4}-\d{2}-\d{2}/.test(dateStr)
+    const dateObj = isIsoDate ? new Date(dateStr.length === 10 ? `${dateStr}T00:00:00Z` : dateStr) : new Date(dateStr)
+    if (isNaN(dateObj.getTime())) return dateStr
+    return new Intl.DateTimeFormat('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    }).format(dateObj)
+  } catch {
+    return dateStr
+  }
+}
+
 function ItemCard({ item, onSelect }) {
   const visualByCategory = {
     'Cards & Wallets': 'wallet',
     'Bags & Personal Items': 'bag',
     'Books & Stationery': 'notebook',
-    Electronics: item.name.toLocaleLowerCase().includes('headphone')
+    Electronics: (item.name || '').toLowerCase().includes('headphone')
       ? 'headphones'
       : 'charger',
     Keys: 'keys',
     Other: 'bottle',
   }
-  const visual = item.visual || visualByCategory[item.category]
-  const reportedDate = /^\d{4}-\d{2}-\d{2}$/.test(item.reported)
-    ? new Intl.DateTimeFormat('en', {
-      day: 'numeric',
-      month: 'short',
-      timeZone: 'UTC',
-    }).format(new Date(`${item.reported}T00:00:00Z`))
-    : item.reported
+  const visual = item.visual || visualByCategory[item.category] || 'default'
+  const formattedDate = formatItemDate(item.reported)
+  const isLost = (item.status || '').toLowerCase() === 'lost'
 
   return (
-    <button
+    <article
       className="browse-item-card"
-      type="button"
       onClick={() => onSelect(item)}
-      aria-label={`View details for ${item.name}, ${item.status.toLowerCase()}, ${item.customCategory ? `Other (${item.customCategory})` : item.category}`}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onSelect(item)
+        }
+      }}
+      aria-label={`View details for ${item.name}, ${item.status}, ${item.customCategory ? `Other (${item.customCategory})` : item.category}`}
     >
-      <span className={`item-illustration item-illustration-${visual}`}>
+      <div className="item-card-media-wrapper">
         {item.photo_url ? (
           <img
             src={item.photo_url}
             alt={item.name}
-            style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'inherit' }}
+            className="item-card-image"
+            loading="lazy"
           />
         ) : (
-          <ItemIllustration type={visual} />
+          <div className={`item-card-placeholder item-placeholder-${visual}`}>
+            <div className="placeholder-icon-wrap">
+              <ItemIllustration type={visual} />
+            </div>
+            <span className="placeholder-caption">No photo provided</span>
+          </div>
         )}
-      </span>
-      <span className="item-card-body">
-        <span className="item-card-topline">
-          <span className={`item-status item-status-${item.status.toLowerCase()}`}>
-            {item.status}
+
+        {/* Prominent Distinguishable Status Badge */}
+        <div className="item-card-overlay-top">
+          <span
+            className={`item-status-badge ${isLost ? 'item-status-lost' : 'item-status-found'}`}
+          >
+            <span className="item-status-dot" aria-hidden="true" />
+            {isLost ? 'LOST' : 'FOUND'}
           </span>
-          <span className="item-card-time">{reportedDate}</span>
-        </span>
-        <span className="item-card-name">{item.name}</span>
-        <span className="item-card-category">{item.customCategory ? `Other (${item.customCategory})` : item.category}</span>
-        <span className="item-card-description">{item.description}</span>
-        <span className="item-card-location">
-          <span aria-hidden="true">⌖</span>
-          {item.location}
-        </span>
-      </span>
-      <span className="item-card-open" aria-hidden="true">View details →</span>
-    </button>
+          {formattedDate && (
+            <span className="item-card-date-chip">
+              <CalendarIcon />
+              {formattedDate}
+            </span>
+          )}
+        </div>
+      </div>
+
+      <div className="item-card-content">
+        <div className="item-card-header">
+          <span className="item-category-pill">
+            {item.customCategory ? `Other (${item.customCategory})` : item.category}
+          </span>
+        </div>
+
+        <h3 className="item-card-title" title={item.name}>
+          {item.name}
+        </h3>
+
+        <p className="item-card-description" title={item.description}>
+          {item.description || 'No additional description provided.'}
+        </p>
+
+        <div className="item-card-meta">
+          <div className="item-meta-item" title={`Location: ${item.location || 'Campus'}`}>
+            <LocationIcon />
+            <span className="item-meta-text">{item.location || 'Campus'}</span>
+          </div>
+        </div>
+
+        <div className="item-card-action">
+          <span className="item-view-btn">
+            View Details
+            <ArrowRightIcon />
+          </span>
+        </div>
+      </div>
+    </article>
   )
 }
 
@@ -172,6 +279,9 @@ function ItemDetailsDialog({ item, onClose }) {
       dialog.close()
     }
   }, [item])
+
+  const isLost = item ? (item.status || '').toLowerCase() === 'lost' : false
+  const formattedDate = item ? formatItemDate(item.reported) : ''
 
   return (
     <dialog
@@ -191,7 +301,7 @@ function ItemDetailsDialog({ item, onClose }) {
         <div className="item-dialog-content">
           <div className="item-dialog-heading">
             <div>
-              <p className="browse-eyebrow">Illustrative demo detail</p>
+              <p className="browse-eyebrow">Campus Lost &amp; Found Listing</p>
               <h2 id="item-dialog-title">{item.name}</h2>
             </div>
             <button
@@ -204,29 +314,48 @@ function ItemDetailsDialog({ item, onClose }) {
               <span aria-hidden="true">×</span>
             </button>
           </div>
+
+          {item.photo_url && (
+            <div className="item-dialog-photo-wrap">
+              <img
+                src={item.photo_url}
+                alt={item.name}
+                className="item-dialog-photo"
+              />
+            </div>
+          )}
+
           <div className="item-dialog-summary">
-            <span className={`item-status item-status-${item.status.toLowerCase()}`}>
-              {item.status}
+            <span
+              className={`item-status-badge ${isLost ? 'item-status-lost' : 'item-status-found'}`}
+            >
+              <span className="item-status-dot" aria-hidden="true" />
+              {isLost ? 'LOST' : 'FOUND'}
             </span>
-            <span className="item-card-category">{item.customCategory ? `Other (${item.customCategory})` : item.category}</span>
+            <span className="item-category-pill">
+              {item.customCategory ? `Other (${item.customCategory})` : item.category}
+            </span>
           </div>
+
           <p className="item-dialog-description">{item.description}</p>
+
           <dl className="item-dialog-meta">
             {item.customCategory && (
               <div>
-                <dt>Specified category</dt>
+                <dt>Custom Category</dt>
                 <dd>{item.customCategory}</dd>
               </div>
             )}
             <div>
-              <dt>Approximate location</dt>
-              <dd>{item.location}</dd>
+              <dt>Location</dt>
+              <dd>{item.location || 'Campus'}</dd>
             </div>
             <div>
-              <dt>Reported</dt>
-              <dd>{item.reported}</dd>
+              <dt>Reported Date</dt>
+              <dd>{formattedDate || item.reported || 'Recently'}</dd>
             </div>
           </dl>
+
           <p className="item-dialog-note">
             Please contact the campus lost &amp; found desk or authorized staff to verify ownership and claim this item.
           </p>
@@ -240,6 +369,7 @@ function BrowseItems() {
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('All')
   const [category, setCategory] = useState('All')
+  const [sortBy, setSortBy] = useState('newest') // 'newest' | 'oldest'
   const [items, setItems] = useState([])
   const [categoriesLoaded, setCategoriesLoaded] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -272,9 +402,10 @@ function BrowseItems() {
 
       if (isSupabaseConfigured && supabase) {
         try {
-          let query = supabase.from('items').select('*').order('reported', { ascending: false })
+          let query = supabase.from('items').select('*')
           if (status !== 'All') query = query.eq('status', status)
           if (category !== 'All') query = query.eq('category', category)
+          query = query.order('reported', { ascending: sortBy === 'oldest' })
 
           const { data, error: sbError } = await query
           if (sbError) throw sbError
@@ -357,21 +488,40 @@ function BrowseItems() {
       isCurrentRequest = false
       controller.abort()
     }
-  }, [category, retryCount, status])
+  }, [category, retryCount, status, sortBy])
 
-  const filteredItems = items.filter((item) => {
-    const searchText = search.trim().toLocaleLowerCase()
-    const searchableText =
-      `${item.name} ${item.description} ${item.category} ${item.customCategory || ''} ${item.location}`.toLocaleLowerCase()
+  // Filter by search (name, description, category, location) and apply sort
+  const filteredAndSortedItems = items
+    .filter((item) => {
+      const searchText = search.trim().toLocaleLowerCase()
+      if (!searchText) return true
 
-    return !searchText || searchableText.includes(searchText)
-  })
+      const searchableText = [
+        item.name || '',
+        item.description || '',
+        item.category || '',
+        item.customCategory || '',
+        item.location || '',
+      ]
+        .join(' ')
+        .toLocaleLowerCase()
+
+      return searchableText.includes(searchText)
+    })
+    .sort((a, b) => {
+      const timeA = new Date(a.reported || 0).getTime()
+      const timeB = new Date(b.reported || 0).getTime()
+      return sortBy === 'oldest' ? timeA - timeB : timeB - timeA
+    })
 
   const clearFilters = () => {
     setSearch('')
     setStatus('All')
     setCategory('All')
+    setSortBy('newest')
   }
+
+  const isFiltered = search !== '' || status !== 'All' || category !== 'All' || sortBy !== 'newest'
 
   return (
     <div className="browse-page">
@@ -379,8 +529,7 @@ function BrowseItems() {
         <p className="browse-eyebrow">Campus Lost &amp; Found</p>
         <h1 id="browse-title">Find what you&apos;ve lost.</h1>
         <p className="browse-intro">
-          Explore items reported by the campus community and help belongings
-          find their way home.
+          Explore items reported by the campus community and help belongings find their way home.
         </p>
         <p className="browse-demo-note">
           <span aria-hidden="true">✓</span>
@@ -388,7 +537,7 @@ function BrowseItems() {
         </p>
       </section>
 
-      <section className="browse-controls" aria-label="Search and filter listings">
+      <section className="browse-controls" aria-label="Search, filter, and sort listings">
         <div className="browse-search">
           <label className="visually-hidden" htmlFor="item-search">
             Search by item name, description or location
@@ -399,7 +548,7 @@ function BrowseItems() {
             type="search"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search by item name, description or location..."
+            placeholder="Search items by name, description, category, or location..."
           />
           {search && (
             <button
@@ -415,7 +564,7 @@ function BrowseItems() {
 
         <div className="browse-filter-row">
           <div className="browse-filter">
-            <label htmlFor="status-filter">Item status</label>
+            <label htmlFor="status-filter">Status</label>
             <select
               id="status-filter"
               value={status}
@@ -423,10 +572,11 @@ function BrowseItems() {
               onChange={(event) => setStatus(event.target.value)}
             >
               <option value="All">All Items</option>
-              <option value="Lost">Lost</option>
-              <option value="Found">Found</option>
+              <option value="Lost">Lost Only</option>
+              <option value="Found">Found Only</option>
             </select>
           </div>
+
           <div className="browse-filter">
             <label htmlFor="category-filter">Category</label>
             <select
@@ -443,11 +593,24 @@ function BrowseItems() {
               ))}
             </select>
           </div>
+
+          <div className="browse-filter">
+            <label htmlFor="sort-filter">Sort By</label>
+            <select
+              id="sort-filter"
+              value={sortBy}
+              onChange={(event) => setSortBy(event.target.value)}
+            >
+              <option value="newest">Newest First</option>
+              <option value="oldest">Oldest First</option>
+            </select>
+          </div>
+
           <button
             className="clear-filters"
             type="button"
             onClick={clearFilters}
-            disabled={search === '' && status === 'All' && category === 'All'}
+            disabled={!isFiltered}
           >
             Clear filters
           </button>
@@ -459,15 +622,15 @@ function BrowseItems() {
           <h2 id="results-heading">Campus listings</h2>
           <p aria-live="polite">
             {loading
-              ? 'Loading demo items…'
-              : `Showing ${filteredItems.length} ${filteredItems.length === 1 ? 'demo item' : 'demo items'}`}
+              ? 'Loading campus items…'
+              : `Showing ${filteredAndSortedItems.length} ${filteredAndSortedItems.length === 1 ? 'item' : 'items'}`}
           </p>
         </div>
 
         {loading ? (
           <div className="browse-loading-state" role="status" aria-live="polite">
             <span className="browse-loading-indicator" aria-hidden="true" />
-            <p>Loading demo listings…</p>
+            <p>Loading campus listings…</p>
           </div>
         ) : error ? (
           <div className="browse-error-state" role="alert">
@@ -482,9 +645,9 @@ function BrowseItems() {
               Try again
             </button>
           </div>
-        ) : filteredItems.length > 0 ? (
+        ) : filteredAndSortedItems.length > 0 ? (
           <div className="browse-item-grid">
-            {filteredItems.map((item) => (
+            {filteredAndSortedItems.map((item) => (
               <ItemCard
                 key={item.id}
                 item={item}
@@ -495,10 +658,9 @@ function BrowseItems() {
         ) : (
           <div className="browse-empty-state" role="status" aria-live="polite">
             <span className="empty-search-icon"><SearchIcon /></span>
-            <h3>No matching items</h3>
+            <h3>No matching items found</h3>
             <p>
-              Try a different search, or adjust your status and category
-              filters.
+              Try adjusting your search query, or clear your filters to explore all community listings.
             </p>
             <button
               className="button button-dark"
