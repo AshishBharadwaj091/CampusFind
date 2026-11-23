@@ -239,15 +239,15 @@ app.post('/api/items', (request, response) => {
 
   if (hasWhatsApp) {
     const digits = body.whatsappNumber.replace(/\D/g, '')
-    if (digits.length < 7 || digits.length > 15) {
-      errors.whatsappNumber = 'Provide a valid WhatsApp number (7-15 digits).'
+    if (digits.length !== 10) {
+      errors.whatsappNumber = 'Please enter a valid 10-digit mobile number.'
     }
   }
 
   if (hasPhone) {
     const digits = body.contactNumber.replace(/\D/g, '')
-    if (digits.length < 7 || digits.length > 15) {
-      errors.contactNumber = 'Provide a valid contact phone number (7-15 digits).'
+    if (digits.length !== 10) {
+      errors.contactNumber = 'Please enter a valid 10-digit mobile number.'
     }
   }
 

@@ -503,7 +503,7 @@ function ItemDetailsDialog({ item, onClose }) {
                       </div>
                     </div>
                     <a
-                      href={`https://wa.me/${contactDetails.whatsapp_number.replace(/\D/g, '')}?text=${encodeURIComponent(
+                      href={`https://wa.me/${contactDetails.whatsapp_number.replace(/\D/g, '').length === 10 ? `91${contactDetails.whatsapp_number.replace(/\D/g, '')}` : contactDetails.whatsapp_number.replace(/\D/g, '')}?text=${encodeURIComponent(
                         `Hi, I am contacting you regarding your ${item.status} item "${item.name}" on CampusFind.`,
                       )}`}
                       target="_blank"

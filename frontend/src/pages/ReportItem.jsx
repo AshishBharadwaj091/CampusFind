@@ -12,9 +12,7 @@ const initialValues = {
   description: '',
   date: '',
   location: '',
-  whatsappCountryCode: '+91',
   whatsappNumber: '',
-  contactCountryCode: '+91',
   contactNumber: '',
   emailAddress: '',
   contactPreference: 'Share my contact details only with interested students.',
@@ -25,16 +23,6 @@ const maxPhotoSize = 5 * 1024 * 1024
 const supportedImageTypes = ['image/jpeg', 'image/png', 'image/webp']
 const currentDate = new Date()
 const today = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`
-
-const countryCodeOptions = [
-  { code: '+91', label: '+91 (India)' },
-  { code: '+1', label: '+1 (US/Canada)' },
-  { code: '+44', label: '+44 (UK)' },
-  { code: '+971', label: '+971 (UAE)' },
-  { code: '+61', label: '+61 (Australia)' },
-  { code: '+65', label: '+65 (Singapore)' },
-  { code: '+49', label: '+49 (Germany)' },
-]
 
 function WhatsAppIcon() {
   return (
@@ -142,8 +130,25 @@ function ReportItem({ onCancel }) {
     if (name === 'category' && value !== 'Other' && errors.customCategory) {
       setErrors((current) => ({ ...current, customCategory: '' }))
     }
-    // Clear collective contact error if user types in any contact field
     if (['whatsappNumber', 'contactNumber', 'emailAddress'].includes(name) && errors.contact) {
+      setErrors((current) => ({ ...current, contact: '' }))
+    }
+  }
+
+  // Enforces purely numeric digits 0-9 and limits to exactly 10 digits
+  const handlePhoneChange = (event) => {
+    const { name, value } = event.target
+    const onlyDigits = value.replace(/\D/g, '').slice(0, 10)
+    setValues((current) => ({
+      ...current,
+      [name]: onlyDigits,
+    }))
+    setConfirmation(null)
+    setSubmitError('')
+    if (errors[name]) {
+      setErrors((current) => ({ ...current, [name]: '' }))
+    }
+    if (errors.contact) {
       setErrors((current) => ({ ...current, contact: '' }))
     }
   }
@@ -219,17 +224,17 @@ function ReportItem({ onCancel }) {
         'Please provide at least one contact method (WhatsApp, Contact Number, or Email) so others can reach you.'
     }
 
+    // If entered, WhatsApp must be exactly 10 digits
     if (hasWhatsApp) {
-      const digits = rawWhatsApp.replace(/\D/g, '')
-      if (digits.length < 7 || digits.length > 15) {
-        nextErrors.whatsappNumber = 'Enter a valid WhatsApp phone number (e.g. 10 digits).'
+      if (rawWhatsApp.length !== 10) {
+        nextErrors.whatsappNumber = 'Please enter a valid 10-digit mobile number.'
       }
     }
 
+    // If entered, Contact Number must be exactly 10 digits
     if (hasPhone) {
-      const digits = rawPhone.replace(/\D/g, '')
-      if (digits.length < 7 || digits.length > 15) {
-        nextErrors.contactNumber = 'Enter a valid contact phone number (e.g. 10 digits).'
+      if (rawPhone.length !== 10) {
+        nextErrors.contactNumber = 'Please enter a valid 10-digit mobile number.'
       }
     }
 
@@ -279,12 +284,8 @@ function ReportItem({ onCancel }) {
     setIsSubmitting(true)
 
     try {
-      const formattedWhatsApp = values.whatsappNumber.trim()
-        ? `${values.whatsappCountryCode} ${values.whatsappNumber.trim()}`
-        : null
-      const formattedContact = values.contactNumber.trim()
-        ? `${values.contactCountryCode} ${values.contactNumber.trim()}`
-        : null
+      const formattedWhatsApp = values.whatsappNumber.trim() || null
+      const formattedContact = values.contactNumber.trim() || null
       const formattedEmail = values.emailAddress.trim()
         ? values.emailAddress.trim().toLowerCase()
         : null
@@ -709,7 +710,7 @@ function ReportItem({ onCancel }) {
           </div>
 
           {/* ================================================================
-              Contact Information Section
+              Contact Information Section (Direct 10-digit Mobile Numbers)
               ================================================================ */}
           <section className="report-contact-section" aria-labelledby="contact-section-title">
             <div className="contact-section-header">
@@ -734,77 +735,51 @@ function ReportItem({ onCancel }) {
             )}
 
             <div className="contact-fields-grid">
-              {/* WhatsApp Number Field */}
-              <div className="report-field contact-phone-field">
+              {/* WhatsApp Number Field - Direct 10-digit number */}
+              <div className="report-field">
                 <label htmlFor="report-whatsapp">
                   <WhatsAppIcon />
                   WhatsApp Number
                   <span className="optional-label">(optional)</span>
                 </label>
-                <div className="phone-input-group">
-                  <select
-                    className="country-code-select"
-                    name="whatsappCountryCode"
-                    value={values.whatsappCountryCode}
-                    onChange={updateValue}
-                    aria-label="WhatsApp country calling code"
-                  >
-                    {countryCodeOptions.map((opt) => (
-                      <option key={opt.code} value={opt.code}>
-                        {opt.label}
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    id="report-whatsapp"
-                    name="whatsappNumber"
-                    type="tel"
-                    value={values.whatsappNumber}
-                    onChange={updateValue}
-                    placeholder="e.g. 98765 43210"
-                    maxLength={15}
-                    aria-invalid={Boolean(errors.whatsappNumber)}
-                    aria-describedby={errors.whatsappNumber ? 'report-whatsapp-error' : undefined}
-                  />
-                </div>
+                <input
+                  id="report-whatsapp"
+                  name="whatsappNumber"
+                  type="tel"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={values.whatsappNumber}
+                  onChange={handlePhoneChange}
+                  placeholder="Enter 10-digit mobile number"
+                  maxLength={10}
+                  aria-invalid={Boolean(errors.whatsappNumber)}
+                  aria-describedby={errors.whatsappNumber ? 'report-whatsapp-error' : undefined}
+                />
                 {errors.whatsappNumber && (
                   <p className="field-error" id="report-whatsapp-error">{errors.whatsappNumber}</p>
                 )}
               </div>
 
-              {/* Contact Phone Number Field */}
-              <div className="report-field contact-phone-field">
+              {/* Contact Phone Number Field - Direct 10-digit number */}
+              <div className="report-field">
                 <label htmlFor="report-contact-number">
                   <PhoneIcon />
                   Contact Number
                   <span className="optional-label">(optional)</span>
                 </label>
-                <div className="phone-input-group">
-                  <select
-                    className="country-code-select"
-                    name="contactCountryCode"
-                    value={values.contactCountryCode}
-                    onChange={updateValue}
-                    aria-label="Phone country calling code"
-                  >
-                    {countryCodeOptions.map((opt) => (
-                      <option key={opt.code} value={opt.code}>
-                        {opt.label}
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    id="report-contact-number"
-                    name="contactNumber"
-                    type="tel"
-                    value={values.contactNumber}
-                    onChange={updateValue}
-                    placeholder="e.g. 98765 43210"
-                    maxLength={15}
-                    aria-invalid={Boolean(errors.contactNumber)}
-                    aria-describedby={errors.contactNumber ? 'report-contact-number-error' : undefined}
-                  />
-                </div>
+                <input
+                  id="report-contact-number"
+                  name="contactNumber"
+                  type="tel"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={values.contactNumber}
+                  onChange={handlePhoneChange}
+                  placeholder="Enter 10-digit mobile number"
+                  maxLength={10}
+                  aria-invalid={Boolean(errors.contactNumber)}
+                  aria-describedby={errors.contactNumber ? 'report-contact-number-error' : undefined}
+                />
                 {errors.contactNumber && (
                   <p className="field-error" id="report-contact-number-error">{errors.contactNumber}</p>
                 )}
