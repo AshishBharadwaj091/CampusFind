@@ -2,6 +2,7 @@
   max-width: 1080px;
   margin: 0 auto;
   padding: 48px 20px 72px;
+  background: var(--bg-page);
 }
 
 .report-heading {
@@ -82,12 +83,12 @@
 }
 
 .report-type-option:hover {
-  border-color: #b8c8bb;
+  border-color: var(--secondary);
 }
 
 .report-type-option.is-selected {
-  border-color: #8aa18e;
-  background: #f4f8f4;
+  border-color: var(--secondary);
+  background: var(--secondary-soft);
 }
 
 .report-type-option input {
@@ -98,7 +99,7 @@
 }
 
 .report-type-option:focus-within {
-  outline: 3px solid rgba(113, 143, 120, 0.5);
+  outline: 3px solid rgba(13, 148, 136, 0.4);
   outline-offset: 2px;
 }
 
@@ -115,7 +116,7 @@
 }
 
 .report-type-option.is-selected .report-type-indicator {
-  border: 5px solid #506c56;
+  border: 5px solid var(--secondary);
 }
 
 .report-type-option strong,
@@ -189,8 +190,8 @@
 .report-field input:focus,
 .report-field select:focus,
 .report-field textarea:focus {
-  border-color: #91a697;
-  box-shadow: 0 0 0 3px rgba(113, 143, 120, 0.13);
+  border-color: var(--secondary);
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
 }
 
 .report-field textarea {
@@ -213,10 +214,10 @@
 
 .privacy-reminder {
   padding: 9px 11px;
-  border-left: 2px solid #a1b393;
+  border-left: 2px solid var(--secondary);
   border-radius: 0 5px 5px 0;
-  background: #f5f8f2;
-  color: #596d57;
+  background: var(--secondary-soft);
+  color: var(--secondary-hover);
 }
 
 .field-error {
@@ -335,10 +336,10 @@
 .report-confirmation {
   margin-top: 19px;
   padding: 14px 15px;
-  border: 1px solid #cfe1d1;
+  border: 1px solid var(--secondary-light);
   border-radius: 8px;
-  background: #f2f8f2;
-  color: #365943;
+  background: var(--secondary-soft);
+  color: var(--secondary-hover);
 }
 
 .report-confirmation strong {
@@ -347,7 +348,7 @@
 
 .report-confirmation p {
   margin: 6px 0 0;
-  color: #526e58;
+  color: var(--secondary-hover);
   font-size: 11px;
   line-height: 1.6;
 }
@@ -368,7 +369,7 @@
 
 .report-side-note {
   padding: 20px;
-  background: #f8faf8;
+  background: var(--bg-card);
 }
 
 .report-side-icon {
@@ -376,9 +377,10 @@
   width: 29px;
   height: 29px;
   place-items: center;
-  border: 1px solid #d9e3da;
+  border: 1px solid var(--secondary-light);
   border-radius: 50%;
-  color: #617b66;
+  color: var(--secondary);
+  background: var(--secondary-soft);
   font-size: 15px;
   font-weight: 700;
 }
@@ -402,9 +404,9 @@
 .report-contact-section {
   margin-top: 24px;
   padding: 20px 18px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--line);
   border-radius: 12px;
-  background: #f8fafc;
+  background: var(--bg-page);
 }
 
 .contact-section-header {
@@ -421,9 +423,9 @@
   flex-shrink: 0;
   place-items: center;
   border-radius: 9px;
-  background: #eff6ff;
-  border: 1px solid #dbeafe;
-  color: #2563eb;
+  background: var(--secondary-soft);
+  border: 1px solid var(--secondary-light);
+  color: var(--secondary);
 }
 
 .contact-section-icon-badge svg {
@@ -433,7 +435,7 @@
 
 .contact-section-title {
   margin: 0 0 4px;
-  color: #0f172a;
+  color: var(--ink);
   font-size: 15px;
   font-weight: 750;
   letter-spacing: -0.02em;
@@ -490,7 +492,7 @@
   height: 14px;
   margin-right: 5px;
   vertical-align: -2px;
-  color: #2563eb;
+  color: var(--secondary);
 }
 
 .contact-privacy-card {
@@ -498,7 +500,7 @@
   padding: 12px 14px;
   border-radius: 8px;
   background: #ffffff;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--line);
 }
 
 .privacy-checkbox-label {
@@ -531,8 +533,8 @@
 }
 
 .privacy-checkbox-label input[type='checkbox']:checked + .privacy-checkbox-custom {
-  background: #2563eb;
-  border-color: #2563eb;
+  background: var(--secondary);
+  border-color: var(--secondary);
 }
 
 .privacy-checkbox-label input[type='checkbox']:checked + .privacy-checkbox-custom::after {
@@ -546,7 +548,7 @@
 }
 
 .privacy-checkbox-label:focus-within .privacy-checkbox-custom {
-  outline: 2px solid #93c5fd;
+  outline: 2px solid var(--secondary);
   outline-offset: 2px;
 }
 
@@ -557,7 +559,7 @@
 }
 
 .privacy-text-content strong {
-  color: #0f172a;
+  color: var(--ink);
   font-size: 12px;
   font-weight: 700;
 }
@@ -581,7 +583,7 @@
   height: 20px;
   place-items: center;
   border-radius: 50%;
-  background: #059669;
+  background: var(--secondary);
   color: #ffffff;
   font-size: 12px;
   font-weight: 800;
@@ -590,7 +592,7 @@
 .confirmation-privacy-note {
   display: block;
   margin-top: 6px;
-  color: #047857;
+  color: var(--secondary-hover);
   font-weight: 600;
 }
 
@@ -599,22 +601,22 @@
   gap: 6px;
   margin-top: 16px;
   padding: 12px 14px;
-  border: 1px solid #dbeafe;
+  border: 1px solid var(--secondary-light);
   border-radius: 8px;
-  background: #eff6ff;
-  color: #1e40af;
+  background: var(--secondary-soft);
+  color: var(--secondary-hover);
 }
 
 .report-privacy-summary-card strong {
   font-size: 11px;
   font-weight: 750;
-  color: #1e3a8a;
+  color: var(--ink);
 }
 
 .report-privacy-summary-card span {
   font-size: 11px;
   line-height: 1.5;
-  color: #1e40af;
+  color: var(--secondary-hover);
 }
 
 .report-demo-callout {

@@ -2,6 +2,7 @@
   max-width: 540px;
   margin: 0 auto;
   padding: 56px 20px 80px;
+  background: var(--bg-page);
 }
 
 .staff-login-container {
@@ -20,10 +21,10 @@
   align-items: center;
   gap: 6px;
   padding: 4px 12px;
-  background: #f4f8f4;
-  border: 1px solid #c9d8cb;
+  background: var(--secondary-soft);
+  border: 1px solid var(--secondary-light);
   border-radius: 999px;
-  color: #3b5c43;
+  color: var(--secondary-hover);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -37,7 +38,7 @@
 
 .staff-login-header h1 {
   margin: 0 0 10px;
-  color: var(--ink, #172b26);
+  color: var(--ink);
   font-size: clamp(28px, 3.5vw, 36px);
   font-weight: 730;
   letter-spacing: -0.045em;
@@ -96,14 +97,14 @@
 }
 
 .staff-login-form {
-  background: #fff;
-  border: 1px solid var(--line, #d8e0da);
+  background: var(--bg-card);
+  border: 1px solid var(--line);
   border-radius: 12px;
   padding: 28px 24px;
   display: flex;
   flex-direction: column;
   gap: 18px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 4px 16px rgba(23, 43, 58, 0.04);
 }
 
 .login-field {
@@ -141,8 +142,8 @@
 }
 
 .login-field input:focus {
-  border-color: #91a697;
-  box-shadow: 0 0 0 3px rgba(113, 143, 120, 0.16);
+  border-color: var(--secondary);
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.16);
 }
 
 .login-field input[aria-invalid='true'] {
@@ -170,6 +171,12 @@
   min-height: 44px;
   font-size: 13px;
   font-weight: 650;
+  background: var(--primary);
+  color: #fff;
+}
+
+.login-submit-button:hover {
+  background: var(--secondary);
 }
 
 .staff-login-footer {
@@ -181,8 +188,8 @@
   align-items: flex-start;
   gap: 11px;
   padding: 13px 15px;
-  background: #fafbfa;
-  border: 1px dashed #cbd7ce;
+  background: var(--secondary-soft);
+  border: 1px dashed var(--secondary-light);
   border-radius: 9px;
   color: #55635c;
 }

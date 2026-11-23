@@ -567,8 +567,8 @@ function ReportItem({ currentUser, onCancel, onNavigate }) {
               alignItems: 'center',
               gap: '12px',
               padding: '12px 16px',
-              backgroundColor: '#f0fdf4',
-              border: '1px solid #bbf7d0',
+              backgroundColor: '#f0fdfa',
+              border: '1px solid #ccfbf1',
               borderRadius: '10px',
               marginBottom: '16px',
             }}
@@ -578,7 +578,7 @@ function ReportItem({ currentUser, onCancel, onNavigate }) {
                 width: '36px',
                 height: '36px',
                 borderRadius: '50%',
-                backgroundColor: '#16a34a',
+                backgroundColor: '#0D9488',
                 color: '#fff',
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -590,13 +590,13 @@ function ReportItem({ currentUser, onCancel, onNavigate }) {
               {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
             </span>
             <div>
-              <div style={{ fontSize: '12px', color: '#15803d', fontWeight: '500' }}>
+              <div style={{ fontSize: '12px', color: '#0f766e', fontWeight: '500' }}>
                 Reporting as verified campus student:
               </div>
-              <strong style={{ color: '#166534', fontSize: '14px' }}>
+              <strong style={{ color: '#172B3A', fontSize: '14px' }}>
                 {currentUser.name || 'Student'}
               </strong>{' '}
-              <span style={{ color: '#4ade80', fontSize: '13px' }}>
+              <span style={{ color: '#0D9488', fontSize: '13px' }}>
                 ({currentUser.email})
               </span>
             </div>

@@ -1,16 +1,25 @@
 :root {
   font-family:
     Inter, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  color: #17232c;
-  background: #fff;
+  color: #172B3A;
+  background: #F4F7F8;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-  --ink: #17232c;
-  --muted: #737d82;
-  --line: #e7eae8;
+  /* CampusFind Theme Palette: Navy Blue + Teal + Soft White */
+  --primary: #172B3A;
+  --primary-hover: #101e29;
+  --secondary: #0D9488;
+  --secondary-hover: #0f766e;
+  --secondary-light: #ccfbf1;
+  --secondary-soft: #f0fdfa;
+  --bg-page: #F4F7F8;
+  --bg-card: #FFFFFF;
+  --ink: #172B3A;
+  --muted: #64748b;
+  --line: #e2e8f0;
 }
 
 * {
@@ -21,12 +30,15 @@ html {
   min-width: 0;
   scroll-behavior: smooth;
   scroll-padding-top: 20px;
+  background: #F4F7F8;
 }
 
 body {
   min-width: 0;
   min-height: 100vh;
   margin: 0;
+  background: #F4F7F8;
+  color: #172B3A;
 }
 
 body,
@@ -43,11 +55,11 @@ a {
 
 button:focus-visible,
 a:focus-visible {
-  outline: 3px solid #718f78;
+  outline: 3px solid #0D9488;
   outline-offset: 3px;
 }
 
 ::selection {
-  background: #dce9de;
-  color: #17232c;
+  background: #ccfbf1;
+  color: #172B3A;
 }
