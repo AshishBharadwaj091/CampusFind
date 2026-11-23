@@ -1,0 +1,539 @@
+/* ==========================================================================
+   CampusFind - Recently Reported Items Carousel Styles
+   Theme: Navy Blue (#172B3A), Teal (#0D9488), Soft White (#F4F7F8), Cards (#FFFFFF)
+   ========================================================================== */
+
+.recent-items-section {
+  position: relative;
+  padding-top: 48px;
+  padding-bottom: 56px;
+  border-top: 1px solid var(--line, #e2e8f0);
+}
+
+.recent-heading-wrap {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.recent-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+  color: var(--secondary, #0D9488);
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.live-pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--secondary, #0D9488);
+  box-shadow: 0 0 0 0 rgba(13, 148, 136, 0.7);
+  animation: recent-pulse 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+}
+
+@keyframes recent-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(13, 148, 136, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 7px rgba(13, 148, 136, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(13, 148, 136, 0);
+  }
+}
+
+.recent-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-shrink: 0;
+}
+
+.view-all-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--secondary, #0D9488);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: color 150ms ease;
+}
+
+.view-all-link:hover {
+  color: var(--secondary-hover, #0f766e);
+}
+
+.view-all-link svg {
+  width: 14px;
+  height: 14px;
+  transition: transform 150ms ease;
+}
+
+.view-all-link:hover svg {
+  transform: translateX(3px);
+}
+
+.carousel-nav-arrows {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.carousel-arrow-btn {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--line, #e2e8f0);
+  border-radius: 50%;
+  background: var(--bg-card, #FFFFFF);
+  color: var(--ink, #172B3A);
+  cursor: pointer;
+  transition: all 180ms ease;
+  box-shadow: 0 1px 3px rgba(23, 43, 58, 0.05);
+}
+
+.carousel-arrow-btn:hover {
+  background: var(--primary, #172B3A);
+  color: #FFFFFF;
+  border-color: var(--primary, #172B3A);
+  transform: translateY(-1px);
+}
+
+.carousel-arrow-btn:active {
+  transform: translateY(0);
+}
+
+/* --------------------------------------------------------------------------
+   Carousel Horizontal Container & Track
+   -------------------------------------------------------------------------- */
+.recent-carousel-container {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  padding: 8px 2px 14px;
+}
+
+.recent-carousel-track {
+  display: flex;
+  gap: 18px;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  scroll-snap-type: x mandatory;
+  padding-bottom: 6px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(13, 148, 136, 0.25) transparent;
+}
+
+.recent-carousel-track::-webkit-scrollbar {
+  height: 6px;
+}
+
+.recent-carousel-track::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.recent-carousel-track::-webkit-scrollbar-thumb {
+  background-color: rgba(13, 148, 136, 0.2);
+  border-radius: 999px;
+}
+
+.recent-carousel-track:hover::-webkit-scrollbar-thumb {
+  background-color: var(--secondary, #0D9488);
+}
+
+/* --------------------------------------------------------------------------
+   Individual Item Card (Flipkart / Modern E-Commerce Style)
+   -------------------------------------------------------------------------- */
+.recent-carousel-card {
+  flex: 0 0 280px;
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--line, #e2e8f0);
+  border-radius: 12px;
+  background: var(--bg-card, #FFFFFF);
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(23, 43, 58, 0.04);
+  transition:
+    transform 220ms ease,
+    border-color 220ms ease,
+    box-shadow 220ms ease;
+  user-select: none;
+}
+
+.recent-carousel-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--secondary, #0D9488);
+  box-shadow: 0 12px 24px -6px rgba(23, 43, 58, 0.09), 0 4px 10px -2px rgba(23, 43, 58, 0.03);
+}
+
+.recent-carousel-card:focus-visible {
+  outline: 3px solid var(--secondary, #0D9488);
+  outline-offset: 3px;
+}
+
+/* Card Media (Aspect Ratio 16:10) */
+.recent-card-media {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background: #f8fafc;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.recent-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 320ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.recent-carousel-card:hover .recent-card-img {
+  transform: scale(1.06);
+}
+
+/* Illustrated Placeholder when photo is not provided */
+.recent-card-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, var(--secondary-soft, #f0fdfa) 0%, #e6f4f8 100%);
+  color: #64748b;
+  padding: 12px;
+}
+
+.recent-placeholder-icon {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border-radius: 12px;
+  background: #FFFFFF;
+  border: 1px solid var(--secondary-light, #ccfbf1);
+  box-shadow: 0 2px 6px rgba(23, 43, 58, 0.04);
+  color: var(--secondary, #0D9488);
+  margin-bottom: 4px;
+}
+
+.recent-placeholder-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.recent-placeholder-caption {
+  font-size: 10px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+/* Media Overlay (Status Badge + Date Chip) */
+.recent-card-overlay-top {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.recent-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 9999px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+  backdrop-filter: blur(4px);
+}
+
+.recent-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.recent-status-lost {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.recent-status-lost .recent-status-dot {
+  background: #ef4444;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.25);
+}
+
+.recent-status-found {
+  background: var(--secondary-soft, #f0fdfa);
+  color: var(--secondary, #0D9488);
+  border: 1px solid var(--secondary-light, #ccfbf1);
+}
+
+.recent-status-found .recent-status-dot {
+  background: var(--secondary, #0D9488);
+  box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.25);
+}
+
+.recent-date-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 7px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  color: #475569;
+  font-size: 10px;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.recent-date-chip svg {
+  width: 11px;
+  height: 11px;
+  color: #64748b;
+}
+
+/* Card Body Content */
+.recent-card-body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  padding: 12px 14px 14px;
+}
+
+.recent-card-tag-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 5px;
+}
+
+.recent-category-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  border-radius: 5px;
+  background: var(--secondary-soft, #f0fdfa);
+  border: 1px solid var(--secondary-light, #ccfbf1);
+  color: var(--secondary, #0D9488);
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.recent-card-title {
+  margin: 2px 0 5px;
+  color: var(--ink, #172B3A);
+  font-size: 14px;
+  font-weight: 750;
+  line-height: 1.3;
+  letter-spacing: -0.015em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recent-card-location {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 12px;
+  color: #64748b;
+  font-size: 11.5px;
+  font-weight: 500;
+  overflow: hidden;
+}
+
+.recent-card-location svg {
+  flex-shrink: 0;
+  width: 13px;
+  height: 13px;
+  color: var(--secondary, #0D9488);
+}
+
+.recent-card-location span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recent-card-footer {
+  margin-top: auto;
+}
+
+.recent-view-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 7px 12px;
+  border: 1px solid var(--line, #e2e8f0);
+  border-radius: 7px;
+  background: #f8fafc;
+  color: var(--ink, #172B3A);
+  font-size: 11.5px;
+  font-weight: 650;
+  transition: all 180ms ease;
+}
+
+.recent-view-btn svg {
+  width: 13px;
+  height: 13px;
+  transition: transform 180ms ease;
+}
+
+.recent-carousel-card:hover .recent-view-btn {
+  background: var(--primary, #172B3A);
+  color: #FFFFFF;
+  border-color: var(--primary, #172B3A);
+  box-shadow: 0 4px 10px rgba(23, 43, 58, 0.18);
+}
+
+.recent-carousel-card:hover .recent-view-btn svg {
+  transform: translateX(3px);
+}
+
+/* --------------------------------------------------------------------------
+   Skeleton Shimmer Loading Cards
+   -------------------------------------------------------------------------- */
+.recent-card-skeleton {
+  pointer-events: none;
+}
+
+.skeleton-media {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: recent-shimmer 1.5s infinite;
+}
+
+.skeleton-body {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.skeleton-line {
+  border-radius: 4px;
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: recent-shimmer 1.5s infinite;
+}
+
+.skeleton-tag {
+  width: 60px;
+  height: 16px;
+}
+
+.skeleton-title {
+  width: 80%;
+  height: 18px;
+}
+
+.skeleton-meta {
+  width: 50%;
+  height: 14px;
+  margin-bottom: 6px;
+}
+
+.skeleton-btn {
+  width: 100%;
+  height: 28px;
+}
+
+@keyframes recent-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Empty State
+   -------------------------------------------------------------------------- */
+.recent-carousel-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 36px 20px;
+  background: var(--bg-card, #FFFFFF);
+  border: 1px dashed var(--line, #e2e8f0);
+  border-radius: 12px;
+  text-align: center;
+}
+
+.recent-carousel-empty p {
+  margin: 0 0 14px;
+  color: #64748b;
+  font-size: 13px;
+}
+
+/* --------------------------------------------------------------------------
+   Responsive Media Queries
+   -------------------------------------------------------------------------- */
+@media (max-width: 768px) {
+  .recent-heading-wrap {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .recent-header-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .recent-carousel-card {
+    flex: 0 0 250px;
+  }
+}
+
+@media (max-width: 480px) {
+  .recent-carousel-card {
+    flex: 0 0 230px;
+  }
+
+  .recent-card-body {
+    padding: 10px 12px 12px;
+  }
+}

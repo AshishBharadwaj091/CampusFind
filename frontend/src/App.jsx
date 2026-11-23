@@ -6,6 +6,7 @@ import BrowseItems from './pages/BrowseItems.jsx'
 import ReportItem from './pages/ReportItem.jsx'
 import StaffLogin from './pages/StaffLogin.jsx'
 import StaffDashboard from './pages/StaffDashboard.jsx'
+import RecentItemsCarousel from './components/RecentItemsCarousel.jsx'
 import GoogleIcon from './components/GoogleIcon.jsx'
 import './App.css'
 
@@ -174,20 +175,24 @@ function formatSupabaseUser(user) {
 function App() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [notice, setNotice] = useState('')
-  const [currentPath, setCurrentPath] = useState(window.location.pathname)
+  const [currentPath, setCurrentPath] = useState(
+    window.location.pathname + window.location.search,
+  )
   const [authStatus, setAuthStatus] = useState('checking')
   const [staffUser, setStaffUser] = useState(null)
   const [csrfToken, setCsrfToken] = useState('')
   const [authNotice, setAuthNotice] = useState('')
   const authCheckController = useRef(null)
-  const isBrowsePage = currentPath === '/browse'
-  const isReportPage = currentPath === '/report'
-  const isStaffPage = currentPath === '/staff'
-  const isStaffLoginPage = currentPath === '/staff/login'
+  const pathOnly = currentPath.split('?')[0]
+  const isBrowsePage = pathOnly === '/browse'
+  const isReportPage = pathOnly === '/report'
+  const isStaffPage = pathOnly === '/staff'
+  const isStaffLoginPage = pathOnly === '/staff/login'
   const isHomePage = !isBrowsePage && !isReportPage && !isStaffPage && !isStaffLoginPage
 
   function setPath(path, replace = false) {
-    if (window.location.pathname !== path) {
+    const fullCurrent = window.location.pathname + window.location.search
+    if (fullCurrent !== path) {
       if (replace) window.history.replaceState({}, '', path)
       else window.history.pushState({}, '', path)
       setCurrentPath(path)
@@ -330,16 +335,17 @@ function App() {
 
   useEffect(() => {
     const handlePopState = () => {
-      const path = window.location.pathname
-      if (path === '/staff' && authStatus !== 'authenticated') {
+      const fullPath = window.location.pathname + window.location.search
+      const pathOnly = window.location.pathname
+      if (pathOnly === '/staff' && authStatus !== 'authenticated') {
         window.history.replaceState({}, '', '/staff/login')
         setCurrentPath('/staff/login')
         setAuthNotice('Please sign in with an authorized staff account.')
-      } else if (path === '/staff/login' && authStatus === 'authenticated') {
+      } else if (pathOnly === '/staff/login' && authStatus === 'authenticated') {
         window.history.replaceState({}, '', '/staff')
         setCurrentPath('/staff')
       } else {
-        setCurrentPath(path)
+        setCurrentPath(fullPath)
       }
       setMenuOpen(false)
     }
@@ -349,8 +355,9 @@ function App() {
   }, [authStatus])
 
   const navigateTo = (event, path) => {
-    event.preventDefault()
-    if (path === '/staff' && authStatus !== 'authenticated') {
+    if (event?.preventDefault) event.preventDefault()
+    const pathOnly = path.split('?')[0]
+    if (pathOnly === '/staff' && authStatus !== 'authenticated') {
       setAuthNotice('')
       setPath('/staff/login')
     } else {
@@ -581,6 +588,7 @@ function App() {
           <BrowseItems
             currentUser={staffUser}
             onNavigate={(targetPath) => navigateTo(null, targetPath)}
+            currentPath={currentPath}
           />
         ) : isReportPage ? (
           <ReportItem
@@ -728,9 +736,6 @@ function App() {
                   style={{
                     textAlign: 'left',
                     cursor: 'pointer',
-                    background: 'transparent',
-                    border: 'none',
-                    padding: 0,
                     font: 'inherit',
                   }}
                 >
@@ -747,6 +752,10 @@ function App() {
             })}
           </div>
         </section>
+
+        <RecentItemsCarousel
+          onNavigate={(targetPath) => navigateTo(null, targetPath)}
+        />
 
         <section className="how-section section-block" id="how-it-works" aria-labelledby="how-heading">
           <div className="how-intro">

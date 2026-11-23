@@ -698,7 +698,7 @@ function ItemDetailsDialog({ item, onClose, isMyItem, onResolveItem, onDeleteIte
   )
 }
 
-function BrowseItems({ currentUser, onNavigate }) {
+function BrowseItems({ currentUser, onNavigate, currentPath }) {
   const urlCategory =
     typeof window !== 'undefined'
       ? new URLSearchParams(window.location.search).get('category') || 'All'
@@ -719,6 +719,44 @@ function BrowseItems({ currentUser, onNavigate }) {
   const [retryCount, setRetryCount] = useState(0)
   const [selectedItem, setSelectedItem] = useState(null)
   const availableCategoriesRef = useRef(null)
+
+  // Synchronize category, status, and deep-linked item modal with URL changes
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const urlCat = params.get('category')
+    const urlSt = params.get('status')
+    const urlIt = params.get('item')
+
+    if (urlCat) {
+      setCategory(urlCat)
+    }
+    if (urlSt) {
+      setStatus(urlSt)
+    }
+    if (urlIt) {
+      const match = items.find((i) => String(i.id) === String(urlIt))
+      if (match) {
+        setSelectedItem(match)
+      } else if (isSupabaseConfigured && supabase) {
+        supabase
+          .from('items')
+          .select(
+            'id, name, status, category, custom_category, description, location, reported, photo_url, contact_preference, verification_question, is_dismissed, is_resolved, whatsapp_number, contact_number, email_address, user_id',
+          )
+          .eq('id', urlIt)
+          .single()
+          .then(({ data, error: itemError }) => {
+            if (!itemError && data && !data.is_dismissed) {
+              setSelectedItem({
+                ...data,
+                customCategory: data.custom_category || data.customCategory,
+              })
+            }
+          })
+          .catch((err) => console.warn('Could not fetch deep-linked item:', err))
+      }
+    }
+  }, [currentPath, items])
 
   const [myReportIds, setMyReportIds] = useState(() => {
     try {
@@ -1123,7 +1161,17 @@ function BrowseItems({ currentUser, onNavigate }) {
         isMyItem={isMyReport(selectedItem)}
         onResolveItem={handleResolveItem}
         onDeleteItem={handleDeleteItem}
-        onClose={() => setSelectedItem(null)}
+        onClose={() => {
+          setSelectedItem(null)
+          if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search)
+            if (params.has('item')) {
+              params.delete('item')
+              const searchStr = params.toString() ? `?${params.toString()}` : ''
+              window.history.replaceState({}, '', `${window.location.pathname}${searchStr}`)
+            }
+          }
+        }}
       />
     </div>
   )
