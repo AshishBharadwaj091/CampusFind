@@ -4,6 +4,18 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase.js'
 import { itemCategories } from '../data/mockItems.js'
 import './ReportItem.css'
 
+export const campusZones = [
+  'Academic Blocks (Block 32 to 38)',
+  'Central Library / Study Commons',
+  'Student Centre / UniMall / Food Court (NK)',
+  'Robo Park / Central Lawns',
+  'Boys Hostels (BH-1 to BH-7)',
+  'Girls Hostels (GH-1 to GH-6)',
+  'Sports Complex & Grounds',
+  'Campus Main Gates (Gate 1 - 3)',
+  'Other Campus Area',
+]
+
 const initialValues = {
   type: 'Lost',
   name: '',
@@ -11,7 +23,9 @@ const initialValues = {
   customCategory: '',
   description: '',
   date: '',
-  location: '',
+  locationZone: '',
+  locationDetail: '',
+  verificationQuestion: '',
   whatsappNumber: '',
   contactNumber: '',
   emailAddress: '',
@@ -95,7 +109,7 @@ function ShieldCheckIcon() {
   )
 }
 
-function ReportItem({ onCancel }) {
+function ReportItem({ currentUser, onCancel, onNavigate }) {
   const [values, setValues] = useState(initialValues)
   const [photo, setPhoto] = useState(null)
   const [photoPreview, setPhotoPreview] = useState('')
@@ -107,6 +121,16 @@ function ReportItem({ onCancel }) {
   const [attemptedSubmit, setAttemptedSubmit] = useState(false)
   const formRef = useRef(null)
   const submissionInProgressRef = useRef(false)
+
+  // Pre-fill email if logged in user has an email
+  useEffect(() => {
+    if (currentUser?.email) {
+      setValues((prev) => ({
+        ...prev,
+        emailAddress: prev.emailAddress || currentUser.email,
+      }))
+    }
+  }, [currentUser])
 
   useEffect(() => {
     if (!photoPreview) return undefined
@@ -187,7 +211,9 @@ function ReportItem({ onCancel }) {
 
   const validate = () => {
     const nextErrors = {}
-    if (!values.name.trim()) nextErrors.name = 'Enter an item name.'
+    if (!values.name.trim()) {
+      nextErrors.name = 'Enter an item name (e.g. Casio Watch, CMF Buds).'
+    }
     if (!values.category) {
       nextErrors.category = 'Choose a category.'
     } else if (values.category === 'Other') {
@@ -205,8 +231,8 @@ function ReportItem({ onCancel }) {
     } else if (values.date > today) {
       nextErrors.date = 'The date cannot be in the future.'
     }
-    if (!values.location.trim()) {
-      nextErrors.location = 'Enter an approximate campus location.'
+    if (!values.locationZone) {
+      nextErrors.locationZone = 'Please select a campus area.'
     }
 
     // Contact Information Validation
@@ -265,7 +291,8 @@ function ReportItem({ onCancel }) {
         'customCategory',
         'description',
         'date',
-        'location',
+        'locationZone',
+        'locationDetail',
         'whatsappNumber',
         'contactNumber',
         'emailAddress',
@@ -289,6 +316,10 @@ function ReportItem({ onCancel }) {
       const formattedEmail = values.emailAddress.trim()
         ? values.emailAddress.trim().toLowerCase()
         : null
+
+      const combinedLocation = values.locationDetail.trim()
+        ? `${values.locationZone} - ${values.locationDetail.trim()}`
+        : values.locationZone
 
       if (isSupabaseConfigured && supabase) {
         let photoUrl = null
@@ -322,13 +353,19 @@ function ReportItem({ onCancel }) {
               ? values.customCategory.trim()
               : null,
           description: values.description.trim(),
-          location: values.location.trim(),
+          location: combinedLocation,
           reported: values.date,
           photo_url: photoUrl,
           whatsapp_number: formattedWhatsApp,
           contact_number: formattedContact,
           email_address: formattedEmail,
           contact_preference: values.contactPreference,
+          verification_question:
+            values.type === 'Found' && values.verificationQuestion.trim()
+              ? values.verificationQuestion.trim()
+              : null,
+          reporter_name: currentUser?.name || null,
+          user_id: currentUser?.id || null,
         }
 
         let createdItem = null
@@ -346,7 +383,7 @@ function ReportItem({ onCancel }) {
             insertError.message?.includes('schema cache')
           ) {
             console.warn(
-              'Supabase items table missing contact columns. Inserting core item fields. Please run supabase_schema.sql in Supabase SQL editor.',
+              'Supabase items table missing new columns. Inserting fallback. Please run supabase_schema.sql in Supabase SQL editor.',
             )
             const fallbackItem = {
               name: newItem.name,
@@ -357,6 +394,10 @@ function ReportItem({ onCancel }) {
               location: newItem.location,
               reported: newItem.reported,
               photo_url: newItem.photo_url,
+              whatsapp_number: newItem.whatsapp_number,
+              contact_number: newItem.contact_number,
+              email_address: newItem.email_address,
+              contact_preference: newItem.contact_preference,
             }
             const { data: retryData, error: retryError } = await supabase
               .from('items')
@@ -371,6 +412,19 @@ function ReportItem({ onCancel }) {
           }
         } else {
           createdItem = data
+        }
+
+        // Store item ID in localStorage under campusfind_my_reports for My Reports filter
+        if (createdItem?.id) {
+          try {
+            const stored = JSON.parse(localStorage.getItem('campusfind_my_reports') || '[]')
+            if (!stored.includes(createdItem.id)) {
+              stored.push(createdItem.id)
+              localStorage.setItem('campusfind_my_reports', JSON.stringify(stored))
+            }
+          } catch (e) {
+            console.warn('Failed to save to localStorage:', e)
+          }
         }
 
         try {
@@ -407,11 +461,15 @@ function ReportItem({ onCancel }) {
           category: values.category,
           description: values.description.trim(),
           date: values.date,
-          location: values.location.trim(),
+          location: combinedLocation,
           whatsappNumber: formattedWhatsApp,
           contactNumber: formattedContact,
           emailAddress: formattedEmail,
           contactPreference: values.contactPreference,
+          verificationQuestion:
+            values.type === 'Found' && values.verificationQuestion.trim()
+              ? values.verificationQuestion.trim()
+              : null,
           ...(values.category === 'Other' && values.customCategory.trim()
             ? { customCategory: values.customCategory.trim() }
             : {}),
@@ -500,6 +558,51 @@ function ReportItem({ onCancel }) {
       </section>
 
       <div className="report-layout">
+        {currentUser && (
+          <div
+            className="report-user-banner"
+            style={{
+              gridColumn: '1 / -1',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              padding: '12px 16px',
+              backgroundColor: '#f0fdf4',
+              border: '1px solid #bbf7d0',
+              borderRadius: '10px',
+              marginBottom: '16px',
+            }}
+          >
+            <span
+              style={{
+                width: '36px',
+                height: '36px',
+                borderRadius: '50%',
+                backgroundColor: '#16a34a',
+                color: '#fff',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 'bold',
+                fontSize: '15px',
+              }}
+            >
+              {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
+            </span>
+            <div>
+              <div style={{ fontSize: '12px', color: '#15803d', fontWeight: '500' }}>
+                Reporting as verified campus student:
+              </div>
+              <strong style={{ color: '#166534', fontSize: '14px' }}>
+                {currentUser.name || 'Student'}
+              </strong>{' '}
+              <span style={{ color: '#4ade80', fontSize: '13px' }}>
+                ({currentUser.email})
+              </span>
+            </div>
+          </div>
+        )}
+
         <form
           className="report-form"
           ref={formRef}
@@ -536,19 +639,27 @@ function ReportItem({ onCancel }) {
 
           <div className="report-fields-grid">
             <div className="report-field">
-              <label htmlFor="report-name">Item name <span aria-hidden="true">*</span></label>
+              <label htmlFor="report-name">
+                Item Name (e.g., Casio Watch, CMF Buds, Fastrack Bag) <span aria-hidden="true">*</span>
+              </label>
               <input
                 id="report-name"
                 name="name"
                 type="text"
                 value={values.name}
                 onChange={updateValue}
-                placeholder="e.g. Black water bottle"
+                placeholder="e.g. Casio Watch, CMF Buds 2 Pro, Grey Backpack"
                 maxLength={100}
                 required
                 aria-invalid={Boolean(errors.name)}
-                aria-describedby={errors.name ? 'report-name-error' : undefined}
+                aria-describedby={[
+                  'report-name-hint',
+                  errors.name ? 'report-name-error' : '',
+                ].filter(Boolean).join(' ') || undefined}
               />
+              <p className="field-hint" id="report-name-hint">
+                Enter the name of the object (do not enter your personal name here).
+              </p>
               {errors.name && <p className="field-error" id="report-name-error">{errors.name}</p>}
             </div>
 
@@ -653,26 +764,71 @@ function ReportItem({ onCancel }) {
             </div>
 
             <div className="report-field">
-              <label htmlFor="report-location">Approximate campus location <span aria-hidden="true">*</span></label>
-              <input
-                id="report-location"
-                name="location"
-                type="text"
-                value={values.location}
+              <label htmlFor="report-location-zone">
+                Campus Area / Zone <span aria-hidden="true">*</span>
+              </label>
+              <select
+                id="report-location-zone"
+                name="locationZone"
+                value={values.locationZone}
                 onChange={updateValue}
-                placeholder="e.g. Block 34 cafeteria or Main Library 2nd Floor"
-                maxLength={120}
                 required
-                aria-invalid={Boolean(errors.location)}
-                aria-describedby={errors.location ? 'report-location-error' : 'report-location-hint'}
-              />
-              <p className="field-hint" id="report-location-hint">
-                Use a general campus area or building name.
-              </p>
-              {errors.location && (
-                <p className="field-error" id="report-location-error">{errors.location}</p>
+                aria-invalid={Boolean(errors.locationZone)}
+                aria-describedby={errors.locationZone ? 'report-location-zone-error' : undefined}
+              >
+                <option value="">Select a campus area</option>
+                {campusZones.map((zone) => (
+                  <option key={zone} value={zone}>
+                    {zone}
+                  </option>
+                ))}
+              </select>
+              {errors.locationZone && (
+                <p className="field-error" id="report-location-zone-error">
+                  {errors.locationZone}
+                </p>
               )}
             </div>
+
+            <div className="report-field">
+              <label htmlFor="report-location-detail">
+                Specific Spot / Landmark <span className="optional-label">(optional)</span>
+              </label>
+              <input
+                id="report-location-detail"
+                name="locationDetail"
+                type="text"
+                value={values.locationDetail}
+                onChange={updateValue}
+                placeholder="e.g. Near Nescafe, Room 204, 2nd floor stairs"
+                maxLength={80}
+                aria-describedby="report-location-detail-hint"
+              />
+              <p className="field-hint" id="report-location-detail-hint">
+                Add room number, floor, or nearby landmark.
+              </p>
+            </div>
+
+            {values.type === 'Found' && (
+              <div className="report-field report-field-full">
+                <label htmlFor="report-verification">
+                  Ownership Verification Question <span className="optional-label">(recommended)</span>
+                </label>
+                <input
+                  id="report-verification"
+                  name="verificationQuestion"
+                  type="text"
+                  value={values.verificationQuestion}
+                  onChange={updateValue}
+                  placeholder="e.g. What is the lock screen wallpaper? What color is the phone pouch?"
+                  maxLength={150}
+                  aria-describedby="report-verification-hint"
+                />
+                <p className="field-hint" id="report-verification-hint">
+                  Ask a question that only the genuine owner can answer before you hand over the item.
+                </p>
+              </div>
+            )}
 
             <div className="report-field report-field-full">
               <label htmlFor="report-photo">Item photo <span className="optional-label">(optional)</span></label>
@@ -868,19 +1024,30 @@ function ReportItem({ onCancel }) {
           )}
 
           <div className="report-actions">
+            {confirmation ? (
+              <button
+                className="button button-dark"
+                type="button"
+                onClick={() => (onNavigate ? onNavigate('/browse') : onCancel())}
+              >
+                View in Browse Items →
+              </button>
+            ) : (
+              <button
+                className="button button-dark"
+                type="submit"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? 'Submitting report…' : `Submit ${values.type} Item Report`}
+              </button>
+            )}
             <button
-              className="button button-dark"
-              type="submit"
-              disabled={isSubmitting || Boolean(confirmation)}
+              className="button button-outline"
+              type="button"
+              onClick={onCancel}
+              disabled={isSubmitting}
             >
-              {isSubmitting
-                ? 'Submitting report…'
-                : confirmation
-                  ? 'Report Submitted'
-                  : `Submit ${values.type} Item Report`}
-            </button>
-            <button className="button button-outline" type="button" onClick={onCancel}>
-              Cancel
+              {confirmation ? 'Done' : 'Cancel'}
             </button>
           </div>
         </form>

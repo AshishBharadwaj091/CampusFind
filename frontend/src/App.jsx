@@ -461,14 +461,16 @@ function App() {
             >
               Browse Items
             </a>
-            <a
-              className={`nav-link staff-demo-link${isStaffPage || isStaffLoginPage ? ' is-current' : ''}`}
-              href="/staff"
-              aria-current={isStaffPage || isStaffLoginPage ? 'page' : undefined}
-              onClick={(event) => navigateTo(event, '/staff')}
-            >
-              Staff dashboard
-            </a>
+            {authStatus === 'authenticated' && staffUser?.role === 'staff' && (
+              <a
+                className={`nav-link staff-demo-link${isStaffPage || isStaffLoginPage ? ' is-current' : ''}`}
+                href="/staff"
+                aria-current={isStaffPage || isStaffLoginPage ? 'page' : undefined}
+                onClick={(event) => navigateTo(event, '/staff')}
+              >
+                Staff dashboard
+              </a>
+            )}
             <a
               className="nav-link"
               href={isHomePage ? '#how-it-works' : '/#how-it-works'}
@@ -523,41 +525,29 @@ function App() {
                 </button>
               </div>
             ) : (
-              <>
-                <button
-                  className="button button-google-nav"
-                  type="button"
-                  onClick={handleGoogleSignIn}
-                  title="Sign in with your Google account"
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    background: '#fff',
-                    color: '#3c4043',
-                    border: '1px solid #dadce0',
-                    borderRadius: '8px',
-                    padding: '7px 13px',
-                    fontSize: '13px',
-                    fontWeight: '600',
-                    cursor: 'pointer',
-                    boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-                  }}
-                >
-                  <GoogleIcon size={16} />
-                  <span>Sign in with Google</span>
-                </button>
-                <button
-                  className="button button-quiet nav-sign-in"
-                  type="button"
-                  onClick={() => {
-                    setAuthNotice('')
-                    setPath('/staff/login')
-                  }}
-                >
-                  Staff sign in
-                </button>
-              </>
+              <button
+                className="button button-google-nav"
+                type="button"
+                onClick={handleGoogleSignIn}
+                title="Sign in with your Google account"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  background: '#fff',
+                  color: '#3c4043',
+                  border: '1px solid #dadce0',
+                  borderRadius: '8px',
+                  padding: '7px 13px',
+                  fontSize: '13px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                }}
+              >
+                <GoogleIcon size={16} />
+                <span>Sign in with Google</span>
+              </button>
             )}
             <a
               className={`button button-dark nav-report${isReportPage ? ' is-current' : ''}`}
@@ -588,9 +578,16 @@ function App() {
 
       <main>
         {isBrowsePage ? (
-          <BrowseItems />
+          <BrowseItems
+            currentUser={staffUser}
+            onNavigate={(targetPath) => navigateTo(null, targetPath)}
+          />
         ) : isReportPage ? (
-          <ReportItem onCancel={(event) => navigateTo(event, '/browse')} />
+          <ReportItem
+            currentUser={staffUser}
+            onCancel={(event) => navigateTo(event, '/browse')}
+            onNavigate={(targetPath) => navigateTo(null, targetPath)}
+          />
         ) : isStaffPage ? (
           authStatus === 'authenticated' ? (
             <StaffDashboard
@@ -711,23 +708,43 @@ function App() {
               <h2 id="categories-heading">What are you looking for?</h2>
             </div>
             <p className="section-intro">
-              Start with a category to explore. Live item listings are not
-              connected in this homepage demo.
+              Explore lost and found belongings reported across the campus by category.
             </p>
           </div>
           <div className="category-grid">
-            {categories.map((category) => (
-              <article className="category-card" key={category.name}>
-                <span className={`category-icon tone-${category.tone}`}>
-                  <Icon name={category.icon} />
-                </span>
-                <h3>{category.name}</h3>
-                <p>{category.description}</p>
-                <span className="category-arrow" aria-hidden="true">
-                  <Icon name="arrow" />
-                </span>
-              </article>
-            ))}
+            {categories.map((category) => {
+              const targetCategory = category.name === 'Other Belongings' ? 'Other' : category.name
+              return (
+                <button
+                  type="button"
+                  className="category-card"
+                  key={category.name}
+                  onClick={(event) =>
+                    navigateTo(
+                      event,
+                      `/browse?category=${encodeURIComponent(targetCategory)}`,
+                    )
+                  }
+                  style={{
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    background: 'transparent',
+                    border: 'none',
+                    padding: 0,
+                    font: 'inherit',
+                  }}
+                >
+                  <span className={`category-icon tone-${category.tone}`}>
+                    <Icon name={category.icon} />
+                  </span>
+                  <h3>{category.name}</h3>
+                  <p>{category.description}</p>
+                  <span className="category-arrow" aria-hidden="true">
+                    <Icon name="arrow" />
+                  </span>
+                </button>
+              )
+            })}
           </div>
         </section>
 
@@ -804,7 +821,18 @@ function App() {
         >
           Back to top ↑
         </a>
-        <p className="footer-copyright">© 2026 CampusFind · Homepage demo</p>
+        <div className="footer-links-row" style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+          <p className="footer-copyright">© 2026 CampusFind · Campus Lost &amp; Found</p>
+          <span style={{ color: '#94a3b8' }}>•</span>
+          <a
+            href="/staff/login"
+            className="footer-staff-link"
+            onClick={(event) => navigateTo(event, '/staff/login')}
+            style={{ color: '#64748b', fontSize: '13px', textDecoration: 'none' }}
+          >
+            Staff Portal
+          </a>
+        </div>
       </footer>
     </div>
   )

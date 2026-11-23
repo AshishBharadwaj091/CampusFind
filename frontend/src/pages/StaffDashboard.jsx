@@ -243,7 +243,7 @@ function ReportDetailsDialog({
                 />
               </div>
               <p className="staff-dialog-subnote">
-                Demo notice: Warning record is logged in the system. No student email is dispatched in this demo.
+                Official notice: Warning record is logged in the campus system.
               </p>
               <div className="staff-action-box-actions">
                 <button
@@ -316,7 +316,7 @@ function ReportDetailsDialog({
           )}
 
           <p className="staff-dialog-note">
-            Staff actions update in-memory demonstration records. No student notification is sent.
+            Staff actions immediately update campus database records.
           </p>
         </div>
       )}
@@ -447,6 +447,18 @@ function StaffDashboard({ staffUser, csrfToken, onLogout }) {
           .select()
           .single()
         if (error) throw error
+        // Update items table so dismissed items are hidden from public view
+        try {
+          await supabase
+            .from('items')
+            .update({
+              is_dismissed: true,
+              dismiss_reason: trimmedReason,
+            })
+            .ilike('name', report.itemName)
+        } catch (itemErr) {
+          console.warn('Could not update dismissed status in items table:', itemErr)
+        }
         const updatedReport = mapSupabaseReport(data)
         setReports((current) => current.map((r) => (r.id === report.id ? updatedReport : r)))
         setSelectedReport(updatedReport)
@@ -518,6 +530,18 @@ function StaffDashboard({ staffUser, csrfToken, onLogout }) {
           .select()
           .single()
         if (error) throw error
+        // Ensure items table reflects approved and active status
+        try {
+          await supabase
+            .from('items')
+            .update({
+              is_dismissed: false,
+              dismiss_reason: null,
+            })
+            .ilike('name', report.itemName)
+        } catch (itemErr) {
+          console.warn('Could not update approved status in items table:', itemErr)
+        }
         const updatedReport = mapSupabaseReport(data)
         setReports((current) => current.map((r) => (r.id === report.id ? updatedReport : r)))
         setSelectedReport(updatedReport)
@@ -585,6 +609,18 @@ function StaffDashboard({ staffUser, csrfToken, onLogout }) {
           .select()
           .single()
         if (error) throw error
+        // Ensure items table reflects approved and active status
+        try {
+          await supabase
+            .from('items')
+            .update({
+              is_dismissed: false,
+              dismiss_reason: null,
+            })
+            .ilike('name', report.itemName)
+        } catch (itemErr) {
+          console.warn('Could not update approved status in items table:', itemErr)
+        }
         const updatedReport = mapSupabaseReport(data)
         setReports((current) => current.map((r) => (r.id === report.id ? updatedReport : r)))
         setSelectedReport(updatedReport)
@@ -660,7 +696,7 @@ function StaffDashboard({ staffUser, csrfToken, onLogout }) {
         <article className="staff-summary-card">
           <span className="summary-label">Total reports</span>
           <strong>{counts.total}</strong>
-          <span className="summary-detail">Demo records</span>
+          <span className="summary-detail">Campus records</span>
         </article>
         <article className="staff-summary-card summary-pending">
           <span className="summary-label">Pending review</span>

@@ -228,7 +228,7 @@ function formatItemDate(dateStr) {
   }
 }
 
-function ItemCard({ item, onSelect }) {
+function ItemCard({ item, onSelect, isMyItem }) {
   const visualByCategory = {
     'Cards & Wallets': 'wallet',
     'Bags & Personal Items': 'bag',
@@ -242,6 +242,7 @@ function ItemCard({ item, onSelect }) {
   const visual = item.visual || visualByCategory[item.category] || 'default'
   const formattedDate = formatItemDate(item.reported)
   const isLost = (item.status || '').toLowerCase() === 'lost'
+  const isResolved = Boolean(item.is_resolved)
 
   return (
     <article
@@ -276,12 +277,24 @@ function ItemCard({ item, onSelect }) {
 
         {/* Prominent Distinguishable Status Badge */}
         <div className="item-card-overlay-top">
-          <span
-            className={`item-status-badge ${isLost ? 'item-status-lost' : 'item-status-found'}`}
-          >
-            <span className="item-status-dot" aria-hidden="true" />
-            {isLost ? 'LOST' : 'FOUND'}
-          </span>
+          {isResolved ? (
+            <span className="item-status-badge item-status-resolved">
+              <span className="item-status-dot" aria-hidden="true" />
+              RESOLVED
+            </span>
+          ) : (
+            <span
+              className={`item-status-badge ${isLost ? 'item-status-lost' : 'item-status-found'}`}
+            >
+              <span className="item-status-dot" aria-hidden="true" />
+              {isLost ? 'LOST' : 'FOUND'}
+            </span>
+          )}
+          {isMyItem && (
+            <span className="item-my-report-chip" title="You reported this item">
+              My Post
+            </span>
+          )}
           {formattedDate && (
             <span className="item-card-date-chip">
               <CalendarIcon />
@@ -324,7 +337,7 @@ function ItemCard({ item, onSelect }) {
   )
 }
 
-function ItemDetailsDialog({ item, onClose }) {
+function ItemDetailsDialog({ item, onClose, isMyItem, onResolveItem, onDeleteItem }) {
   const dialogRef = useRef(null)
   const [contactRevealed, setContactRevealed] = useState(false)
   const [loadingContact, setLoadingContact] = useState(false)
@@ -455,6 +468,54 @@ function ItemDetailsDialog({ item, onClose }) {
             </div>
           </dl>
 
+          {/* Ownership Verification Question for Found items */}
+          {item.status === 'Found' && item.verification_question && (
+            <div className="item-dialog-verification-box">
+              <div className="verification-box-header">
+                <span aria-hidden="true">🔐</span>
+                <strong>Finder&apos;s Ownership Verification</strong>
+              </div>
+              <p className="verification-box-desc">
+                The finder asked this question to verify genuine ownership before handover:
+              </p>
+              <blockquote className="verification-box-quote">
+                &ldquo;{item.verification_question}&rdquo;
+              </blockquote>
+            </div>
+          )}
+
+          {/* User's Own Post Controls (Resolve / Returned & Delete) */}
+          {isMyItem && (
+            <div className="item-dialog-owner-panel">
+              <div className="owner-panel-header">
+                <span aria-hidden="true">👤</span>
+                <strong>Your Listing Controls</strong>
+              </div>
+              <div className="owner-panel-actions">
+                {!item.is_resolved ? (
+                  <button
+                    type="button"
+                    className="button-owner-resolve"
+                    onClick={() => onResolveItem(item.id)}
+                  >
+                    ✓ Mark as Returned / Resolved
+                  </button>
+                ) : (
+                  <span className="owner-resolved-badge">
+                    ✓ Marked as Returned / Resolved
+                  </span>
+                )}
+                <button
+                  type="button"
+                  className="button-owner-delete"
+                  onClick={() => onDeleteItem(item.id)}
+                >
+                  🗑 Delete Report
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* ================================================================
               Authorized Contact Information Flow
               ================================================================ */}
@@ -581,10 +642,19 @@ function ItemDetailsDialog({ item, onClose }) {
   )
 }
 
-function BrowseItems() {
+function BrowseItems({ currentUser, onNavigate }) {
+  const urlCategory =
+    typeof window !== 'undefined'
+      ? new URLSearchParams(window.location.search).get('category') || 'All'
+      : 'All'
+  const urlStatus =
+    typeof window !== 'undefined'
+      ? new URLSearchParams(window.location.search).get('status') || 'All'
+      : 'All'
+
   const [search, setSearch] = useState('')
-  const [status, setStatus] = useState('All')
-  const [category, setCategory] = useState('All')
+  const [status, setStatus] = useState(urlStatus)
+  const [category, setCategory] = useState(urlCategory)
   const [sortBy, setSortBy] = useState('newest') // 'newest' | 'oldest'
   const [items, setItems] = useState([])
   const [categoriesLoaded, setCategoriesLoaded] = useState(false)
@@ -593,6 +663,66 @@ function BrowseItems() {
   const [retryCount, setRetryCount] = useState(0)
   const [selectedItem, setSelectedItem] = useState(null)
   const availableCategoriesRef = useRef(null)
+
+  const [myReportIds, setMyReportIds] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('campusfind_my_reports') || '[]')
+    } catch {
+      return []
+    }
+  })
+
+  const isMyReport = (item) => {
+    if (!item) return false
+    if (myReportIds.includes(item.id)) return true
+    if (
+      currentUser?.email &&
+      item.email_address &&
+      item.email_address.toLowerCase() === currentUser.email.toLowerCase()
+    ) {
+      return true
+    }
+    if (currentUser?.id && item.user_id && item.user_id === currentUser.id) {
+      return true
+    }
+    return false
+  }
+
+  const handleResolveItem = async (itemId) => {
+    try {
+      if (isSupabaseConfigured && supabase) {
+        await supabase.from('items').update({ is_resolved: true }).eq('id', itemId)
+      }
+      setItems((prev) =>
+        prev.map((it) => (it.id === itemId ? { ...it, is_resolved: true } : it)),
+      )
+      setSelectedItem((prev) =>
+        prev && prev.id === itemId ? { ...prev, is_resolved: true } : prev,
+      )
+    } catch (err) {
+      console.error('Failed to resolve item:', err)
+    }
+  }
+
+  const handleDeleteItem = async (itemId) => {
+    if (!window.confirm('Are you sure you want to delete this report? This cannot be undone.')) {
+      return
+    }
+    try {
+      if (isSupabaseConfigured && supabase) {
+        await supabase.from('items').delete().eq('id', itemId)
+      }
+      setItems((prev) => prev.filter((it) => it.id !== itemId))
+      setSelectedItem(null)
+      const updated = myReportIds.filter((id) => id !== itemId)
+      setMyReportIds(updated)
+      try {
+        localStorage.setItem('campusfind_my_reports', JSON.stringify(updated))
+      } catch {}
+    } catch (err) {
+      console.error('Failed to delete report:', err)
+    }
+  }
 
   useEffect(() => {
     let isCurrentRequest = true
@@ -618,11 +748,16 @@ function BrowseItems() {
 
       if (isSupabaseConfigured && supabase) {
         try {
-          // Privacy: Select only public listing fields (omit whatsapp_number, contact_number, email_address)
+          // Exclude dismissed items completely from public view
           let query = supabase
             .from('items')
-            .select('id, name, status, category, custom_category, description, location, reported, photo_url, contact_preference')
-          if (status !== 'All') query = query.eq('status', status)
+            .select(
+              'id, name, status, category, custom_category, description, location, reported, photo_url, contact_preference, verification_question, is_dismissed, is_resolved, email_address, user_id',
+            )
+            .neq('is_dismissed', true)
+
+          if (status === 'Lost') query = query.eq('status', 'Lost')
+          if (status === 'Found') query = query.eq('status', 'Found')
           if (category !== 'All') query = query.eq('category', category)
           query = query.order('reported', { ascending: sortBy === 'oldest' })
 
@@ -654,7 +789,9 @@ function BrowseItems() {
       }
 
       const query = new URLSearchParams()
-      if (status !== 'All') query.set('status', status)
+      if (status !== 'All' && status !== 'MyReports' && status !== 'Resolved') {
+        query.set('status', status)
+      }
       if (category !== 'All') query.set('category', category)
       const queryString = query.toString()
 
@@ -709,9 +846,21 @@ function BrowseItems() {
     }
   }, [category, retryCount, status, sortBy])
 
-  // Filter by search (name, description, category, location) and apply sort
+  // Filter by search, status, and sort
   const filteredAndSortedItems = items
     .filter((item) => {
+      // Exclude dismissed items
+      if (item.is_dismissed) return false
+
+      // Status filters
+      if (status === 'Lost' && (item.status || '').toLowerCase() !== 'lost') return false
+      if (status === 'Found' && (item.status || '').toLowerCase() !== 'found') return false
+      if (status === 'Resolved' && !item.is_resolved) return false
+      if (status === 'MyReports' && !isMyReport(item)) return false
+      if (status === 'All' && item.is_resolved) return false
+
+      if (category !== 'All' && item.category !== category) return false
+
       const searchText = search.trim().toLocaleLowerCase()
       if (!searchText) return true
 
@@ -790,9 +939,13 @@ function BrowseItems() {
               disabled={loading && !categoriesLoaded}
               onChange={(event) => setStatus(event.target.value)}
             >
-              <option value="All">All Items</option>
+              <option value="All">All Active Items</option>
               <option value="Lost">Lost Only</option>
               <option value="Found">Found Only</option>
+              <option value="MyReports">
+                My Reports ({items.filter(isMyReport).length})
+              </option>
+              <option value="Resolved">Resolved / Returned</option>
             </select>
           </div>
 
@@ -870,6 +1023,7 @@ function BrowseItems() {
               <ItemCard
                 key={item.id}
                 item={item}
+                isMyItem={isMyReport(item)}
                 onSelect={setSelectedItem}
               />
             ))}
@@ -877,23 +1031,42 @@ function BrowseItems() {
         ) : (
           <div className="browse-empty-state" role="status" aria-live="polite">
             <span className="empty-search-icon"><SearchIcon /></span>
-            <h3>No matching items found</h3>
+            <h3>
+              {status === 'MyReports'
+                ? 'No reports found for your account'
+                : 'No matching items found'}
+            </h3>
             <p>
-              Try adjusting your search query, or clear your filters to explore all community listings.
+              {status === 'MyReports'
+                ? 'You have not reported any items yet, or all your reports have been completed.'
+                : 'Try adjusting your search query, or clear your filters to explore all community listings.'}
             </p>
-            <button
-              className="button button-dark"
-              type="button"
-              onClick={clearFilters}
-            >
-              Clear filters
-            </button>
+            {status === 'MyReports' && onNavigate ? (
+              <button
+                className="button button-dark"
+                type="button"
+                onClick={() => onNavigate('/report')}
+              >
+                Report an Item Now
+              </button>
+            ) : (
+              <button
+                className="button button-dark"
+                type="button"
+                onClick={clearFilters}
+              >
+                Clear filters
+              </button>
+            )}
           </div>
         )}
       </section>
 
       <ItemDetailsDialog
         item={selectedItem}
+        isMyItem={isMyReport(selectedItem)}
+        onResolveItem={handleResolveItem}
+        onDeleteItem={handleDeleteItem}
         onClose={() => setSelectedItem(null)}
       />
     </div>
