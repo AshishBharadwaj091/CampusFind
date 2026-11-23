@@ -339,7 +339,6 @@ function ItemCard({ item, onSelect, isMyItem }) {
 
 function ItemDetailsDialog({ item, onClose, isMyItem, onResolveItem, onDeleteItem }) {
   const dialogRef = useRef(null)
-  const [contactRevealed, setContactRevealed] = useState(false)
   const [loadingContact, setLoadingContact] = useState(false)
   const [contactDetails, setContactDetails] = useState(null)
   const [contactError, setContactError] = useState('')
@@ -354,43 +353,107 @@ function ItemDetailsDialog({ item, onClose, isMyItem, onResolveItem, onDeleteIte
   }, [item])
 
   useEffect(() => {
-    setContactRevealed(false)
-    setContactDetails(null)
-    setContactError('')
+    let isCurrent = true
+    if (!item?.id) {
+      setContactDetails(null)
+      setContactError('')
+      return
+    }
+
+    // Immediately populate with item's contact info if already available
+    setContactDetails({
+      whatsapp_number: item.whatsapp_number || null,
+      contact_number: item.contact_number || null,
+      email_address: item.email_address || null,
+      contact_preference:
+        item.contact_preference ||
+        'Share my contact details only with interested students.',
+    })
+
+    // Fetch fresh contact details directly from Supabase
+    const fetchContactDetails = async () => {
+      setLoadingContact(true)
+      setContactError('')
+      try {
+        if (isSupabaseConfigured && supabase) {
+          const { data, error } = await supabase
+            .from('items')
+            .select('whatsapp_number, contact_number, email_address, contact_preference')
+            .eq('id', item.id)
+            .single()
+
+          if (!error && data && isCurrent) {
+            setContactDetails((prev) => ({ ...prev, ...data }))
+          }
+        } else {
+          const response = await fetch(`${apiBaseUrl}/api/items/${item.id}/contact`)
+          const payload = await response.json()
+          if (response.ok && payload.contact && isCurrent) {
+            setContactDetails((prev) => ({
+              ...prev,
+              whatsapp_number:
+                payload.contact.whatsappNumber ||
+                payload.contact.whatsapp_number ||
+                prev?.whatsapp_number,
+              contact_number:
+                payload.contact.contactNumber ||
+                payload.contact.contact_number ||
+                prev?.contact_number,
+              email_address:
+                payload.contact.emailAddress ||
+                payload.contact.email_address ||
+                prev?.email_address,
+              contact_preference:
+                payload.contact.contactPreference ||
+                payload.contact.contact_preference ||
+                prev?.contact_preference,
+            }))
+          }
+        }
+      } catch (err) {
+        console.warn('Could not refresh contact details:', err)
+      } finally {
+        if (isCurrent) setLoadingContact(false)
+      }
+    }
+
+    fetchContactDetails()
+
+    return () => {
+      isCurrent = false
+    }
   }, [item])
 
-  const handleRevealContact = async () => {
-    if (!item) return
-    setLoadingContact(true)
-    setContactError('')
+  const effectiveWhatsApp = (
+    contactDetails?.whatsapp_number ||
+    item?.whatsapp_number ||
+    ''
+  ).trim()
+  const effectivePhone = (
+    contactDetails?.contact_number ||
+    item?.contact_number ||
+    ''
+  ).trim()
+  const effectiveEmail = (
+    contactDetails?.email_address ||
+    item?.email_address ||
+    ''
+  ).trim()
+  const effectivePreference =
+    contactDetails?.contact_preference ||
+    item?.contact_preference ||
+    'Share my contact details only with interested students.'
 
-    try {
-      if (isSupabaseConfigured && supabase) {
-        const { data, error } = await supabase
-          .from('items')
-          .select('whatsapp_number, contact_number, email_address, contact_preference')
-          .eq('id', item.id)
-          .single()
+  const hasWhatsApp = Boolean(effectiveWhatsApp)
+  const hasPhone = Boolean(effectivePhone)
+  const hasEmail = Boolean(effectiveEmail)
+  const hasAnyContact = hasWhatsApp || hasPhone || hasEmail
 
-        if (error) throw error
-        setContactDetails(data || {})
-        setContactRevealed(true)
-      } else {
-        const response = await fetch(`${apiBaseUrl}/api/items/${item.id}/contact`)
-        const payload = await response.json()
-        if (!response.ok) {
-          throw new Error(payload?.error?.message || 'Could not retrieve contact information.')
-        }
-        setContactDetails(payload.contact || {})
-        setContactRevealed(true)
-      }
-    } catch (err) {
-      console.error('Failed to load contact info:', err)
-      setContactError(err.message || 'Unable to retrieve contact details.')
-    } finally {
-      setLoadingContact(false)
-    }
-  }
+  // Reporter has enabled sharing unless preference explicitly states 'do not share' or 'private'
+  const isSharingEnabled =
+    !effectivePreference.toLowerCase().includes('do not share') &&
+    !effectivePreference.toLowerCase().includes('private') &&
+    effectivePreference.toLowerCase() !== 'none'
 
   const isLost = item ? (item.status || '').toLowerCase() === 'lost' : false
   const formattedDate = item ? formatItemDate(item.reported) : ''
@@ -525,32 +588,46 @@ function ItemDetailsDialog({ item, onClose, isMyItem, onResolveItem, onDeleteIte
               <div>
                 <h3>Connect with Reporter</h3>
                 <p>
-                  {item.contact_preference ||
-                    'Protected: Shared only with interested campus students.'}
+                  {isSharingEnabled
+                    ? (effectivePreference || 'Direct contact details provided by the reporter.')
+                    : 'Contact details kept private per reporter preference.'}
                 </p>
               </div>
             </div>
 
-            {!contactRevealed ? (
-              <div className="contact-reveal-prompt">
+            {!isSharingEnabled ? (
+              <div className="contact-private-note">
                 <p>
-                  {isLost
-                    ? 'Found this item? Reach out to the owner to arrange a safe return on campus.'
-                    : 'Recognize this item as yours? Contact the finder to verify ownership and claim it.'}
+                  The reporter has chosen to keep their direct contact details private. Please contact campus security or the lost &amp; found desk to connect.
                 </p>
-                <button
-                  type="button"
-                  className="button button-contact-reveal"
-                  onClick={handleRevealContact}
-                  disabled={loadingContact}
-                >
-                  {loadingContact ? 'Accessing secure details…' : 'Reveal Contact Details'}
-                </button>
-                {contactError && <p className="contact-reveal-error">{contactError}</p>}
               </div>
-            ) : (
+            ) : hasAnyContact ? (
               <div className="contact-revealed-list">
-                {contactDetails?.whatsapp_number && (
+                {/* Contact Phone Number */}
+                {hasPhone && (
+                  <div className="contact-method-row">
+                    <div className="contact-method-info">
+                      <span className="contact-method-icon phone-icon-bg">
+                        <PhoneIcon />
+                      </span>
+                      <div>
+                        <span className="contact-method-label">Contact Number</span>
+                        <strong className="contact-method-value">
+                          {effectivePhone}
+                        </strong>
+                      </div>
+                    </div>
+                    <a
+                      href={`tel:${effectivePhone.replace(/\s+/g, '')}`}
+                      className="contact-action-btn phone-action"
+                    >
+                      Call Now
+                    </a>
+                  </div>
+                )}
+
+                {/* WhatsApp Number */}
+                {hasWhatsApp && (
                   <div className="contact-method-row">
                     <div className="contact-method-info">
                       <span className="contact-method-icon whatsapp-icon-bg">
@@ -559,12 +636,16 @@ function ItemDetailsDialog({ item, onClose, isMyItem, onResolveItem, onDeleteIte
                       <div>
                         <span className="contact-method-label">WhatsApp</span>
                         <strong className="contact-method-value">
-                          {contactDetails.whatsapp_number}
+                          {effectiveWhatsApp}
                         </strong>
                       </div>
                     </div>
                     <a
-                      href={`https://wa.me/${contactDetails.whatsapp_number.replace(/\D/g, '').length === 10 ? `91${contactDetails.whatsapp_number.replace(/\D/g, '')}` : contactDetails.whatsapp_number.replace(/\D/g, '')}?text=${encodeURIComponent(
+                      href={`https://wa.me/${
+                        effectiveWhatsApp.replace(/\D/g, '').length === 10
+                          ? `91${effectiveWhatsApp.replace(/\D/g, '')}`
+                          : effectiveWhatsApp.replace(/\D/g, '')
+                      }?text=${encodeURIComponent(
                         `Hi, I am contacting you regarding your ${item.status} item "${item.name}" on CampusFind.`,
                       )}`}
                       target="_blank"
@@ -576,43 +657,22 @@ function ItemDetailsDialog({ item, onClose, isMyItem, onResolveItem, onDeleteIte
                   </div>
                 )}
 
-                {contactDetails?.contact_number && (
-                  <div className="contact-method-row">
-                    <div className="contact-method-info">
-                      <span className="contact-method-icon phone-icon-bg">
-                        <PhoneIcon />
-                      </span>
-                      <div>
-                        <span className="contact-method-label">Phone Call</span>
-                        <strong className="contact-method-value">
-                          {contactDetails.contact_number}
-                        </strong>
-                      </div>
-                    </div>
-                    <a
-                      href={`tel:${contactDetails.contact_number.replace(/\s+/g, '')}`}
-                      className="contact-action-btn phone-action"
-                    >
-                      Call
-                    </a>
-                  </div>
-                )}
-
-                {contactDetails?.email_address && (
+                {/* Email Address */}
+                {hasEmail && (
                   <div className="contact-method-row">
                     <div className="contact-method-info">
                       <span className="contact-method-icon email-icon-bg">
                         <EmailIcon />
                       </span>
                       <div>
-                        <span className="contact-method-label">Email</span>
+                        <span className="contact-method-label">Email Address</span>
                         <strong className="contact-method-value">
-                          {contactDetails.email_address}
+                          {effectiveEmail}
                         </strong>
                       </div>
                     </div>
                     <a
-                      href={`mailto:${contactDetails.email_address}?subject=${encodeURIComponent(
+                      href={`mailto:${effectiveEmail}?subject=${encodeURIComponent(
                         `CampusFind: Regarding your ${item.status} item "${item.name}"`,
                       )}`}
                       className="contact-action-btn email-action"
@@ -621,15 +681,11 @@ function ItemDetailsDialog({ item, onClose, isMyItem, onResolveItem, onDeleteIte
                     </a>
                   </div>
                 )}
-
-                {!contactDetails?.whatsapp_number &&
-                  !contactDetails?.contact_number &&
-                  !contactDetails?.email_address && (
-                    <p className="no-direct-contact-note">
-                      No direct contact method was recorded for this listing. Please contact the campus lost &amp; found desk or authorized staff.
-                    </p>
-                  )}
               </div>
+            ) : (
+              <p className="no-direct-contact-note">
+                No direct contact method was recorded for this listing. Please contact the campus lost &amp; found desk or authorized staff.
+              </p>
             )}
           </section>
 
@@ -752,7 +808,7 @@ function BrowseItems({ currentUser, onNavigate }) {
           let query = supabase
             .from('items')
             .select(
-              'id, name, status, category, custom_category, description, location, reported, photo_url, contact_preference, verification_question, is_dismissed, is_resolved, email_address, user_id',
+              'id, name, status, category, custom_category, description, location, reported, photo_url, contact_preference, verification_question, is_dismissed, is_resolved, whatsapp_number, contact_number, email_address, user_id',
             )
             .neq('is_dismissed', true)
 
