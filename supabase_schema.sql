@@ -57,26 +57,7 @@ CREATE POLICY "Public reports insert access" ON public.reports FOR INSERT WITH C
 CREATE POLICY "Staff reports read access" ON public.reports FOR SELECT USING (true);
 CREATE POLICY "Staff reports update access" ON public.reports FOR UPDATE USING (true) WITH CHECK (true);
 
--- 7. Insert Initial Demo Items
-INSERT INTO public.items (name, status, category, description, location, reported)
-VALUES
-  ('Wireless Headphones', 'Found', 'Electronics', 'Over-ear wireless headphones in a dark case.', 'Learning commons', '2026-10-16'),
-  ('Key Set', 'Lost', 'Keys', 'A set of two silver keys with a plain dark key fob.', 'Cafeteria vicinity', '2026-10-15'),
-  ('Grey Backpack', 'Found', 'Bags & Personal Items', 'A grey backpack with several compartments.', 'Near the student centre', '2026-10-14'),
-  ('Grid Paper Notebook', 'Lost', 'Books & Stationery', 'A medium-sized notebook with a dark green cover.', 'Academic block study area', '2026-10-13'),
-  ('Blue Water Bottle', 'Found', 'Other', 'A reusable blue bottle with a screw-top lid.', 'Sports complex entrance', '2026-10-12')
-ON CONFLICT DO NOTHING;
-
--- 8. Insert Initial Demo Staff Reports
-INSERT INTO public.reports (id, item_name, type, category, location, date_reported, review_status, description)
-VALUES
-  ('CF-2041', 'Silver wireless earbuds case', 'Found', 'Electronics', 'Library courtyard', '2026-10-16', 'Pending review', 'A small silver earbuds charging case was found near a seating area.'),
-  ('CF-2040', 'Navy canvas tote bag', 'Lost', 'Bags & Personal Items', 'Academic block walkway', '2026-10-15', 'Pending review', 'A navy canvas tote bag was last seen on campus.'),
-  ('CF-2039', 'Green grid notebook', 'Lost', 'Books & Stationery', 'Learning commons', '2026-10-15', 'Approved', 'A medium-sized notebook with a green cover and graph paper.'),
-  ('CF-2038', 'Single brass key', 'Found', 'Keys', 'Sports complex entrance', '2026-10-14', 'Pending review', 'One brass-colored key was found near a campus entrance.')
-ON CONFLICT (id) DO NOTHING;
-
--- 9. Storage Bucket setup for photo uploads
+-- 7. Storage Bucket setup for photo uploads
 INSERT INTO storage.buckets (id, name, public)
 VALUES ('item-photos', 'item-photos', true)
 ON CONFLICT (id) DO NOTHING;

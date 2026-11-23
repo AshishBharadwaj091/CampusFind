@@ -228,8 +228,7 @@ function ItemDetailsDialog({ item, onClose }) {
             </div>
           </dl>
           <p className="item-dialog-note">
-            This is illustrative demo content. No real report or contact
-            information is connected.
+            Please contact the campus lost &amp; found desk or authorized staff to verify ownership and claim this item.
           </p>
         </div>
       )}
@@ -384,8 +383,8 @@ function BrowseItems() {
           find their way home.
         </p>
         <p className="browse-demo-note">
-          <span aria-hidden="true">i</span>
-          Illustrative demo listings — not live reports
+          <span aria-hidden="true">✓</span>
+          Live campus community listings
         </p>
       </section>
 

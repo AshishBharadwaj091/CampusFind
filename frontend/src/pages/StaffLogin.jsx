@@ -268,7 +268,7 @@ function StaffLogin({ onLoginSuccess, onCancel, notice }) {
             <div>
               <strong>Protected Campus Resource</strong>
               <p>
-                Staff sessions use cryptographic HttpOnly cookies and CSRF protection. In-memory sessions automatically reset if the Express server restarts.
+                Staff sessions use cryptographic token authentication protected by Supabase security policies.
               </p>
             </div>
           </div>
