@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { apiBaseUrl } from '../config/api.js'
+import { supabase, isSupabaseConfigured } from '../lib/supabase.js'
 import { itemCategories } from '../data/mockItems.js'
 import './BrowseItems.css'
 
@@ -130,7 +131,15 @@ function ItemCard({ item, onSelect }) {
       aria-label={`View details for ${item.name}, ${item.status.toLowerCase()}, ${item.customCategory ? `Other (${item.customCategory})` : item.category}`}
     >
       <span className={`item-illustration item-illustration-${visual}`}>
-        <ItemIllustration type={visual} />
+        {item.photo_url ? (
+          <img
+            src={item.photo_url}
+            alt={item.name}
+            style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'inherit' }}
+          />
+        ) : (
+          <ItemIllustration type={visual} />
+        )}
       </span>
       <span className="item-card-body">
         <span className="item-card-topline">
@@ -261,6 +270,40 @@ function BrowseItems() {
     const loadItems = async () => {
       setLoading(true)
       setError('')
+
+      if (isSupabaseConfigured && supabase) {
+        try {
+          let query = supabase.from('items').select('*').order('reported', { ascending: false })
+          if (status !== 'All') query = query.eq('status', status)
+          if (category !== 'All') query = query.eq('category', category)
+
+          const { data, error: sbError } = await query
+          if (sbError) throw sbError
+
+          if (isCurrentRequest) {
+            const formatted = (data || []).map((item) => ({
+              ...item,
+              customCategory: item.custom_category || item.customCategory,
+            }))
+            setItems(formatted)
+            if (status === 'All' && category === 'All') {
+              availableCategoriesRef.current = [
+                ...new Set(formatted.map((item) => item.category)),
+              ]
+              setCategoriesLoaded(true)
+            }
+          }
+          return
+        } catch (sbErr) {
+          if (!isCurrentRequest) return
+          console.error('Supabase fetch error:', sbErr)
+          setError(sbErr.message || 'Error loading items from Supabase.')
+          return
+        } finally {
+          if (isCurrentRequest) setLoading(false)
+        }
+      }
+
       const query = new URLSearchParams()
       if (status !== 'All') query.set('status', status)
       if (category !== 'All') query.set('category', category)

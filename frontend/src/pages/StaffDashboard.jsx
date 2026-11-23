@@ -1,6 +1,25 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { apiBaseUrl } from '../config/api.js'
+import { supabase, isSupabaseConfigured } from '../lib/supabase.js'
 import './StaffDashboard.css'
+
+function mapSupabaseReport(r) {
+  return {
+    id: r.id,
+    itemName: r.item_name || r.itemName,
+    type: r.type,
+    category: r.category,
+    location: r.location,
+    dateReported: r.date_reported || r.dateReported,
+    reviewStatus: r.review_status || r.reviewStatus,
+    description: r.description,
+    dismissReason: r.dismiss_reason || r.dismissReason,
+    dismissedAt: r.dismissed_at || r.dismissedAt,
+    warningIssued: r.warning_issued !== undefined ? r.warning_issued : r.warningIssued,
+    warningReason: r.warning_reason || r.warningReason,
+    warnedAt: r.warned_at || r.warnedAt,
+  }
+}
 
 const reviewStatuses = ['Pending review', 'Approved', 'Dismissed']
 
@@ -324,6 +343,24 @@ function StaffDashboard({ staffUser, csrfToken, onLogout }) {
     const fetchReports = async () => {
       setIsLoading(true)
       setLoadError('')
+
+      if (isSupabaseConfigured && supabase) {
+        try {
+          const { data, error } = await supabase
+            .from('reports')
+            .select('*')
+            .order('created_at', { ascending: false })
+          if (error) throw error
+          if (active) setReports((data || []).map(mapSupabaseReport))
+          return
+        } catch (error) {
+          if (active) setLoadError(error.message || 'Error loading reports from Supabase.')
+          return
+        } finally {
+          if (active) setIsLoading(false)
+        }
+      }
+
       try {
         const response = await fetch(`${apiBaseUrl}/api/reports`, {
           credentials: 'include',
@@ -398,6 +435,29 @@ function StaffDashboard({ staffUser, csrfToken, onLogout }) {
     const trimmedReason = reason.trim() || 'Investigation found no issue'
 
     try {
+      if (isSupabaseConfigured && supabase) {
+        const { data, error } = await supabase
+          .from('reports')
+          .update({
+            review_status: 'Dismissed',
+            dismiss_reason: trimmedReason,
+            dismissed_at: new Date().toISOString(),
+          })
+          .eq('id', report.id)
+          .select()
+          .single()
+        if (error) throw error
+        const updatedReport = mapSupabaseReport(data)
+        setReports((current) => current.map((r) => (r.id === report.id ? updatedReport : r)))
+        setSelectedReport(updatedReport)
+        setFeedbackNotice({
+          type: 'success',
+          title: 'Report Dismissed',
+          message: `Report ${report.id} (${report.itemName}) has been dismissed: "${trimmedReason}".`,
+        })
+        return
+      }
+
       const response = await fetch(`${apiBaseUrl}/api/reports/${encodeURIComponent(report.id)}/dismiss`, {
         method: 'POST',
         headers: {
@@ -446,6 +506,29 @@ function StaffDashboard({ staffUser, csrfToken, onLogout }) {
       reason.trim() || 'Inappropriate report: content violates campus reporting guidelines'
 
     try {
+      if (isSupabaseConfigured && supabase) {
+        const { data, error } = await supabase
+          .from('reports')
+          .update({
+            warning_issued: true,
+            warning_reason: trimmedReason,
+            warned_at: new Date().toISOString(),
+          })
+          .eq('id', report.id)
+          .select()
+          .single()
+        if (error) throw error
+        const updatedReport = mapSupabaseReport(data)
+        setReports((current) => current.map((r) => (r.id === report.id ? updatedReport : r)))
+        setSelectedReport(updatedReport)
+        setFeedbackNotice({
+          type: 'warning',
+          title: 'Reporter Warning Issued',
+          message: `Warning issued to reporter for report ${report.id}: "${trimmedReason}".`,
+        })
+        return
+      }
+
       const response = await fetch(`${apiBaseUrl}/api/reports/${encodeURIComponent(report.id)}/warn`, {
         method: 'POST',
         headers: {
@@ -492,6 +575,27 @@ function StaffDashboard({ staffUser, csrfToken, onLogout }) {
     setActionError('')
 
     try {
+      if (isSupabaseConfigured && supabase) {
+        const { data, error } = await supabase
+          .from('reports')
+          .update({
+            review_status: 'Approved',
+          })
+          .eq('id', report.id)
+          .select()
+          .single()
+        if (error) throw error
+        const updatedReport = mapSupabaseReport(data)
+        setReports((current) => current.map((r) => (r.id === report.id ? updatedReport : r)))
+        setSelectedReport(updatedReport)
+        setFeedbackNotice({
+          type: 'success',
+          title: 'Report Approved',
+          message: `Report ${report.id} (${report.itemName}) approved successfully.`,
+        })
+        return
+      }
+
       const response = await fetch(`${apiBaseUrl}/api/reports/${encodeURIComponent(report.id)}/approve`, {
         method: 'POST',
         headers: {

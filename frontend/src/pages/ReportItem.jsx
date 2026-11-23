@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { apiBaseUrl } from '../config/api.js'
+import { supabase, isSupabaseConfigured } from '../lib/supabase.js'
 import { itemCategories } from '../data/mockItems.js'
 import './ReportItem.css'
 
@@ -137,6 +138,72 @@ function ReportItem({ onCancel }) {
     setIsSubmitting(true)
 
     try {
+      if (isSupabaseConfigured && supabase) {
+        let photoUrl = null
+        if (photo) {
+          try {
+            const fileExt = photo.name.split('.').pop()
+            const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt}`
+            const { error: uploadError } = await supabase.storage
+              .from('item-photos')
+              .upload(fileName, photo)
+
+            if (!uploadError) {
+              const { data: publicUrlData } = supabase.storage
+                .from('item-photos')
+                .getPublicUrl(fileName)
+              photoUrl = publicUrlData?.publicUrl
+            } else {
+              console.warn('Storage upload error (continuing without image):', uploadError)
+            }
+          } catch (storageErr) {
+            console.warn('Supabase storage exception:', storageErr)
+          }
+        }
+
+        const newItem = {
+          name: values.name.trim(),
+          status: values.type,
+          category: values.category,
+          custom_category:
+            values.category === 'Other' && values.customCategory.trim()
+              ? values.customCategory.trim()
+              : null,
+          description: values.description.trim(),
+          location: values.location.trim(),
+          reported: values.date,
+          photo_url: photoUrl,
+        }
+
+        const { data: createdItem, error: insertError } = await supabase
+          .from('items')
+          .insert(newItem)
+          .select()
+          .single()
+
+        if (insertError) throw insertError
+
+        try {
+          await supabase.from('reports').insert({
+            item_name: newItem.name,
+            type: newItem.status,
+            category: newItem.category,
+            location: newItem.location,
+            date_reported: newItem.reported,
+            review_status: 'Pending review',
+            description: newItem.description,
+          })
+        } catch (reportErr) {
+          console.warn('Staff report creation error (non-fatal):', reportErr)
+        }
+
+        setConfirmation({
+          ...createdItem,
+          customCategory: createdItem.custom_category,
+        })
+        return
+      }
+
       const response = await fetch(`${apiBaseUrl}/api/items`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

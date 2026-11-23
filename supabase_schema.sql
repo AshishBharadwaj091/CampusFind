@@ -1,6 +1,5 @@
 -- ========================================================
--- CampusFind Supabase Database Setup & Schema
--- Run this script in your Supabase SQL Editor (supabase.com)
+-- CampusFind Supabase Database Setup & Schema (Idempotent)
 -- ========================================================
 
 -- 1. Enable UUID Extension
@@ -42,46 +41,21 @@ CREATE TABLE IF NOT EXISTS public.reports (
 ALTER TABLE public.items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.reports ENABLE ROW LEVEL SECURITY;
 
--- 5. RLS Policies for `items` Table
--- Anyone (Public) can read all items
-CREATE POLICY "Public items read access"
-  ON public.items FOR SELECT
-  USING (true);
+-- 5. Drop existing policies to prevent "already exists" errors
+DROP POLICY IF EXISTS "Public items read access" ON public.items;
+DROP POLICY IF EXISTS "Public items insert access" ON public.items;
+DROP POLICY IF EXISTS "Authenticated items update access" ON public.items;
+DROP POLICY IF EXISTS "Authenticated items delete access" ON public.items;
+DROP POLICY IF EXISTS "Public reports insert access" ON public.reports;
+DROP POLICY IF EXISTS "Staff reports read access" ON public.reports;
+DROP POLICY IF EXISTS "Staff reports update access" ON public.reports;
 
--- Anyone can submit/report an item
-CREATE POLICY "Public items insert access"
-  ON public.items FOR INSERT
-  WITH CHECK (true);
-
--- Only authenticated users can update/delete items
-CREATE POLICY "Authenticated items update access"
-  ON public.items FOR UPDATE
-  TO authenticated
-  USING (true)
-  WITH CHECK (true);
-
-CREATE POLICY "Authenticated items delete access"
-  ON public.items FOR DELETE
-  TO authenticated
-  USING (true);
-
--- 6. RLS Policies for `reports` Table
--- Public can insert reports when filing lost/found
-CREATE POLICY "Public reports insert access"
-  ON public.reports FOR INSERT
-  WITH CHECK (true);
-
--- Authenticated staff can read and manage reports
-CREATE POLICY "Staff reports read access"
-  ON public.reports FOR SELECT
-  TO authenticated
-  USING (true);
-
-CREATE POLICY "Staff reports update access"
-  ON public.reports FOR UPDATE
-  TO authenticated
-  USING (true)
-  WITH CHECK (true);
+-- 6. Create RLS Policies
+CREATE POLICY "Public items read access" ON public.items FOR SELECT USING (true);
+CREATE POLICY "Public items insert access" ON public.items FOR INSERT WITH CHECK (true);
+CREATE POLICY "Public reports insert access" ON public.reports FOR INSERT WITH CHECK (true);
+CREATE POLICY "Staff reports read access" ON public.reports FOR SELECT USING (true);
+CREATE POLICY "Staff reports update access" ON public.reports FOR UPDATE USING (true) WITH CHECK (true);
 
 -- 7. Insert Initial Demo Items
 INSERT INTO public.items (name, status, category, description, location, reported)
@@ -100,19 +74,15 @@ VALUES
   ('CF-2040', 'Navy canvas tote bag', 'Lost', 'Bags & Personal Items', 'Academic block walkway', '2026-10-15', 'Pending review', 'A navy canvas tote bag was last seen on campus.'),
   ('CF-2039', 'Green grid notebook', 'Lost', 'Books & Stationery', 'Learning commons', '2026-10-15', 'Approved', 'A medium-sized notebook with a green cover and graph paper.'),
   ('CF-2038', 'Single brass key', 'Found', 'Keys', 'Sports complex entrance', '2026-10-14', 'Pending review', 'One brass-colored key was found near a campus entrance.')
-ON CONFLICT DO NOTHING;
+ON CONFLICT (id) DO NOTHING;
 
--- 9. Storage Bucket setup (Run in SQL Editor if storage extension is enabled)
+-- 9. Storage Bucket setup for photo uploads
 INSERT INTO storage.buckets (id, name, public)
 VALUES ('item-photos', 'item-photos', true)
 ON CONFLICT (id) DO NOTHING;
 
--- Allow public access to view images
-CREATE POLICY "Public Access"
-  ON storage.objects FOR SELECT
-  USING (bucket_id = 'item-photos');
+DROP POLICY IF EXISTS "Public Access" ON storage.objects;
+DROP POLICY IF EXISTS "Public Upload" ON storage.objects;
 
--- Allow public to upload images
-CREATE POLICY "Public Upload"
-  ON storage.objects FOR INSERT
-  WITH CHECK (bucket_id = 'item-photos');
+CREATE POLICY "Public Access" ON storage.objects FOR SELECT USING (bucket_id = 'item-photos');
+CREATE POLICY "Public Upload" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'item-photos');

@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import campusImage from './assets/lpu-campus.png'
 import { apiBaseUrl } from './config/api.js'
+import { supabase, isSupabaseConfigured } from './lib/supabase.js'
 import BrowseItems from './pages/BrowseItems.jsx'
 import ReportItem from './pages/ReportItem.jsx'
 import StaffLogin from './pages/StaffLogin.jsx'
 import StaffDashboard from './pages/StaffDashboard.jsx'
+import GoogleIcon from './components/GoogleIcon.jsx'
 import './App.css'
 
 const categories = [
@@ -152,6 +154,23 @@ function Icon({ name, className = '' }) {
   }
 }
 
+function formatSupabaseUser(user) {
+  if (!user) return null
+  return {
+    id: user.id,
+    email: user.email,
+    name:
+      user.user_metadata?.full_name ||
+      user.user_metadata?.name ||
+      user.email?.split('@')[0] ||
+      'User',
+    avatar: user.user_metadata?.avatar_url || user.user_metadata?.picture || null,
+    role:
+      user.user_metadata?.role ||
+      (user.email?.toLowerCase().endsWith('@campusfind.edu') ? 'staff' : 'student'),
+  }
+}
+
 function App() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [notice, setNotice] = useState('')
@@ -177,11 +196,86 @@ function App() {
     setMenuOpen(false)
   }
 
+  const handleGoogleSignIn = async () => {
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: window.location.origin,
+          },
+        })
+        if (error) {
+          setNotice(`Google sign-in error: ${error.message}`)
+        }
+      } catch (err) {
+        setNotice(`Google sign-in failed: ${err.message}`)
+      }
+    } else {
+      alert('Supabase is not configured.')
+    }
+  }
+
   useEffect(() => {
+    let authSubscription = null
+
+    if (isSupabaseConfigured && supabase) {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session?.user) {
+          const u = formatSupabaseUser(session.user)
+          setStaffUser(u)
+          setAuthStatus('authenticated')
+        } else {
+          setAuthStatus('unauthenticated')
+        }
+      })
+
+      const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+        if (session?.user) {
+          const u = formatSupabaseUser(session.user)
+          setStaffUser(u)
+          setAuthStatus('authenticated')
+        } else {
+          setStaffUser(null)
+          setAuthStatus('unauthenticated')
+        }
+      })
+      authSubscription = data?.subscription
+      return () => authSubscription?.unsubscribe()
+    }
+
     const controller = new AbortController()
     authCheckController.current = controller
 
     const checkSession = async () => {
+      if (isSupabaseConfigured && supabase) {
+        try {
+          const { data: { session } } = await supabase.auth.getSession()
+          if (session?.user) {
+            setStaffUser({
+              email: session.user.email,
+              name: session.user.user_metadata?.name || 'Staff Member',
+              role: 'staff',
+            })
+            setAuthStatus('authenticated')
+            if (window.location.pathname === '/staff/login') {
+              setPath('/staff', true)
+            }
+          } else {
+            setAuthStatus('unauthenticated')
+            if (window.location.pathname === '/staff') {
+              setAuthNotice('Please sign in with an authorized staff account.')
+              setPath('/staff/login', true)
+            }
+          }
+          return
+        } catch (sbErr) {
+          console.warn('Supabase auth session check error:', sbErr)
+          setAuthStatus('unauthenticated')
+          return
+        }
+      }
+
       try {
         const response = await fetch(`${apiBaseUrl}/api/auth/me`, {
           credentials: 'include',
@@ -280,6 +374,21 @@ function App() {
 
   const handleLogout = useCallback(async (message = '') => {
     let logoutWarning = ''
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        await supabase.auth.signOut()
+      } catch (err) {
+        console.warn('Supabase sign out error:', err)
+      }
+      setStaffUser(null)
+      setCsrfToken('')
+      setAuthStatus('unauthenticated')
+      setAuthNotice(message || 'You have signed out.')
+      setPath('/staff/login')
+      return
+    }
+
     try {
       const response = await fetch(`${apiBaseUrl}/api/auth/logout`, {
         method: 'POST',
@@ -367,25 +476,88 @@ function App() {
             >
               How It Works
             </a>
-            {authStatus === 'authenticated' ? (
-              <button
-                className="button button-quiet nav-sign-in"
-                type="button"
-                onClick={() => handleLogout()}
+            {authStatus === 'authenticated' && staffUser ? (
+              <div
+                className="nav-user-badge"
+                style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
               >
-                Sign out
-              </button>
+                {staffUser.avatar ? (
+                  <img
+                    src={staffUser.avatar}
+                    alt={staffUser.name}
+                    style={{
+                      width: '28px',
+                      height: '28px',
+                      borderRadius: '50%',
+                      objectFit: 'cover',
+                      border: '1px solid #d0d7de',
+                    }}
+                  />
+                ) : (
+                  <span
+                    style={{
+                      width: '28px',
+                      height: '28px',
+                      borderRadius: '50%',
+                      background: '#718f78',
+                      color: '#fff',
+                      display: 'grid',
+                      placeItems: 'center',
+                      fontSize: '12px',
+                      fontWeight: '700',
+                    }}
+                  >
+                    {staffUser.name?.charAt(0).toUpperCase() || 'U'}
+                  </span>
+                )}
+                <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--ink)' }}>
+                  {staffUser.name}
+                </span>
+                <button
+                  className="button button-quiet nav-sign-in"
+                  type="button"
+                  style={{ padding: '6px 10px', fontSize: '12px' }}
+                  onClick={() => handleLogout()}
+                >
+                  Sign out
+                </button>
+              </div>
             ) : (
-              <button
-                className="button button-quiet nav-sign-in"
-                type="button"
-                onClick={() => {
-                  setAuthNotice('')
-                  setPath('/staff/login')
-                }}
-              >
-                Staff sign in
-              </button>
+              <>
+                <button
+                  className="button button-google-nav"
+                  type="button"
+                  onClick={handleGoogleSignIn}
+                  title="Sign in with your Google account"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    background: '#fff',
+                    color: '#3c4043',
+                    border: '1px solid #dadce0',
+                    borderRadius: '8px',
+                    padding: '7px 13px',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                  }}
+                >
+                  <GoogleIcon size={16} />
+                  <span>Sign in with Google</span>
+                </button>
+                <button
+                  className="button button-quiet nav-sign-in"
+                  type="button"
+                  onClick={() => {
+                    setAuthNotice('')
+                    setPath('/staff/login')
+                  }}
+                >
+                  Staff sign in
+                </button>
+              </>
             )}
             <a
               className={`button button-dark nav-report${isReportPage ? ' is-current' : ''}`}
@@ -454,7 +626,7 @@ function App() {
               CampusFind helps our campus community reconnect with lost
               belongings through one simple, thoughtful place.
             </p>
-            <div className="hero-actions">
+            <div className="hero-actions" style={{ flexWrap: 'wrap', gap: '12px' }}>
               <a
                 className="button button-dark button-large"
                 href="/browse"
@@ -471,6 +643,27 @@ function App() {
                 <Icon name="report" />
                 Report Lost Item
               </a>
+              {!staffUser && (
+                <button
+                  className="button button-large"
+                  type="button"
+                  onClick={handleGoogleSignIn}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    background: '#fff',
+                    border: '1px solid #d0d7de',
+                    borderRadius: '8px',
+                    color: '#24292f',
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.06)',
+                  }}
+                >
+                  <GoogleIcon size={20} />
+                  <span>Continue with Google</span>
+                </button>
+              )}
             </div>
             <div className="hero-footnote">
               <span className="footnote-mark" aria-hidden="true">✳</span>

@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { apiBaseUrl } from '../config/api.js'
+import { supabase, isSupabaseConfigured } from '../lib/supabase.js'
+import GoogleIcon from '../components/GoogleIcon.jsx'
 import './StaffLogin.css'
 
 function StaffLogin({ onLoginSuccess, onCancel, notice }) {
@@ -33,6 +35,25 @@ function StaffLogin({ onLoginSuccess, onCancel, notice }) {
 
     setIsSubmitting(true)
     try {
+      if (isSupabaseConfigured && supabase) {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: email.trim(),
+          password,
+        })
+        if (error) {
+          throw new Error(error.message || 'Invalid staff email or password.')
+        }
+        if (data?.user) {
+          const staffObj = {
+            email: data.user.email,
+            name: data.user.user_metadata?.name || 'Staff Member',
+            role: 'staff',
+          }
+          onLoginSuccess(staffObj, '')
+          return
+        }
+      }
+
       const response = await fetch(`${apiBaseUrl}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -71,6 +92,26 @@ function StaffLogin({ onLoginSuccess, onCancel, notice }) {
     }
   }
 
+  const handleGoogleSignIn = async () => {
+    if (!isSupabaseConfigured || !supabase) {
+      setErrorMessage('Supabase is not configured.')
+      return
+    }
+    setIsSubmitting(true)
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin,
+        },
+      })
+      if (error) throw error
+    } catch (err) {
+      setErrorMessage(err.message || 'Google sign-in could not be initiated.')
+      setIsSubmitting(false)
+    }
+  }
+
   return (
     <div className="staff-login-page">
       <div className="staff-login-container">
@@ -101,6 +142,50 @@ function StaffLogin({ onLoginSuccess, onCancel, notice }) {
             </div>
           </div>
         )}
+
+        <div style={{ marginBottom: '20px' }}>
+          <button
+            type="button"
+            className="button"
+            onClick={handleGoogleSignIn}
+            disabled={isSubmitting}
+            style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '10px',
+              padding: '11px 16px',
+              background: '#fff',
+              border: '1px solid #dcdcdc',
+              borderRadius: '8px',
+              fontWeight: '600',
+              color: '#3c4043',
+              cursor: 'pointer',
+              fontSize: '14px',
+              boxShadow: '0 1px 2px rgba(0,0,0,0.06)',
+            }}
+          >
+            <GoogleIcon size={18} />
+            <span>Continue with Google</span>
+          </button>
+
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              margin: '20px 0 16px',
+              color: '#8c959f',
+              fontSize: '12px',
+            }}
+          >
+            <div style={{ flex: 1, height: '1px', background: '#e1e4e8' }} />
+            <span style={{ padding: '0 12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              or sign in with password
+            </span>
+            <div style={{ flex: 1, height: '1px', background: '#e1e4e8' }} />
+          </div>
+        </div>
 
         <form className="staff-login-form" onSubmit={handleSubmit} noValidate>
           <div className="login-field">
